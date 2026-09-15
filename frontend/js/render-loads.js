@@ -2,41 +2,72 @@ const RenderLoads = (() => {
   async function refresh() {
     const search = document.getElementById('loadSearch').value.trim();
     const status = document.getElementById('loadStatusFilter').value;
+    const entityId = document.getElementById('loadEntityFilter').value;
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     if (status) params.set('status', status);
+    if (entityId) params.set('entity_id', entityId);
     await State.refreshLoads(params.toString() ? `?${params}` : '');
     render();
   }
 
+  function populateEntityFilter() {
+    const sel = document.getElementById('loadEntityFilter');
+    if (sel.dataset.populated) return;
+    sel.innerHTML = `<option value="">All companies</option>` +
+      State.entities.map((e) => `<option value="${e.id}">${esc(e.code)} — ${esc(e.name)}</option>`).join('');
+    sel.dataset.populated = '1';
+  }
+
+  function grossProfit(l) {
+    if (l.carrier_rate == null || l.customer_charge == null) return '—';
+    return money(Number(l.customer_charge) - Number(l.carrier_rate));
+  }
+
+  function etaLfd(l) {
+    const eta = l.eta_date ? l.eta_date.slice(0, 10) : '—';
+    const lfd = l.lfd_date ? l.lfd_date.slice(0, 10) : '—';
+    return `${eta} / ${lfd}`;
+  }
+
   function render() {
+    populateEntityFilter();
     const tbody = document.getElementById('full-loads-table');
     const loads = State.loads;
 
     if (!loads.length) {
-      tbody.innerHTML = `<tr><td colspan="9" class="px-5 py-10 text-center text-slate-500">No loads match. <button data-open-modal="load" class="text-blue-400 underline">Add one</button></td></tr>`;
+      tbody.innerHTML = emptyRow(16, 'No loads match your filters.');
       return;
     }
 
     tbody.innerHTML = loads.map((l) => `
-      <tr class="hover:bg-slate-800/60 transition align-top">
-        <td class="px-5 py-4 font-bold text-white">${esc(l.load_number)}</td>
-        <td class="px-5 py-4">${esc(l.customer_name) || '<span class="text-slate-500">—</span>'}</td>
-        <td class="px-5 py-4">${esc(l.carrier_name) || '<span class="text-slate-500">—</span>'}</td>
-        <td class="px-5 py-4 text-slate-400 max-w-xs">${esc(shortLoc(l.origin))} <i class="fa-solid fa-arrow-right text-xs text-slate-600 mx-1"></i> ${esc(l.consignee_name) || '—'}</td>
-        <td class="px-5 py-4 text-slate-400">${esc(l.container_number) || '—'}<br><span class="text-slate-600">${esc(l.bol_number) || ''}</span></td>
-        <td class="px-5 py-4 font-semibold text-slate-200">${l.carrier_rate != null ? money(l.carrier_rate) : '—'}</td>
-        <td class="px-5 py-4 font-semibold text-emerald-400">${l.customer_rate != null ? money(l.customer_rate) : '—'}</td>
-        <td class="px-5 py-4">${statusBadge(l.status)}</td>
-        <td class="px-5 py-4 text-right whitespace-nowrap space-y-1">
-          <div>
-            <button data-open-doc="rc" data-load-id="${l.id}" title="Rate Confirmation" class="bg-slate-700 hover:bg-slate-600 text-white w-8 h-8 rounded-lg text-xs mr-1"><i class="fa-solid fa-file-pdf text-red-400"></i></button>
-            <button data-open-doc="bol" data-load-id="${l.id}" title="Bill of Lading" class="bg-slate-700 hover:bg-slate-600 text-white w-8 h-8 rounded-lg text-xs mr-1"><i class="fa-solid fa-clipboard-list text-blue-400"></i></button>
-            <button data-edit-load="${l.id}" title="Edit" class="bg-slate-700 hover:bg-slate-600 text-white w-8 h-8 rounded-lg text-xs mr-1"><i class="fa-solid fa-pen"></i></button>
-            <button data-delete-load="${l.id}" data-load-label="load ${esc(l.load_number)}" title="Delete" class="bg-slate-700 hover:bg-red-600 text-white w-8 h-8 rounded-lg text-xs"><i class="fa-solid fa-trash"></i></button>
-          </div>
-          ${l.customer_id && l.customer_rate != null
-            ? `<button data-create-invoice="${l.id}" class="text-xs text-emerald-400 hover:underline">+ Create invoice</button>`
+      <tr class="${statusRowClass(l.status)}">
+        <td><button class="clickable-link" data-edit-load="${l.id}">${esc(l.load_number)}</button></td>
+        <td>${entityBadge(l.entity_code)}</td>
+        <td>${esc(l.dispatcher_user_name) || '<span class="text-muted">—</span>'}</td>
+        <td>${esc(l.load_type) || '—'}</td>
+        <td>${esc(l.customer_name) || '<span class="text-muted">—</span>'}</td>
+        <td>${esc(l.consignee_name) || '<span class="text-muted">—</span>'}</td>
+        <td class="text-muted">${esc(l.deliver_to_address) || '—'}</td>
+        <td>${dateOrDash(l.pickup_date)}</td>
+        <td>${dateOrDash(l.delivery_date)}</td>
+        <td>${dateOrDash(l.empty_return_date)}</td>
+        <td class="text-muted">${etaLfd(l)}</td>
+        <td>
+          <select class="status-select" data-status-select="${l.id}">
+            ${LoadForm.STATUSES.map((s) => `<option value="${s}" ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+          ${l.status === 'Completed' ? `<br><input type="date" class="date-input" style="margin-top:4px;" data-completed-date="${l.id}" value="${l.completed_date ? l.completed_date.slice(0, 10) : ''}">` : ''}
+        </td>
+        <td>${l.carrier_rate != null ? money(l.carrier_rate) : '—'}</td>
+        <td>${l.customer_charge != null ? money(l.customer_charge) : '—'}</td>
+        <td style="font-weight:bold;color:var(--success);">${grossProfit(l)}</td>
+        <td>
+          <button class="btn-primary btn-sm" data-open-doc="rc" data-load-id="${l.id}">Create RC</button>
+          <button class="btn-primary btn-sm" data-open-doc="pod" data-load-id="${l.id}">Create POD</button>
+          <button class="btn-danger btn-sm" data-delete-load="${l.id}" data-load-label="load ${esc(l.load_number)}">Delete</button>
+          ${l.customer_id && l.customer_charge != null
+            ? `<br><button class="clickable-link" style="margin-top:4px;" data-create-invoice="${l.id}">+ Create Invoice</button>`
             : ''}
         </td>
       </tr>`).join('');

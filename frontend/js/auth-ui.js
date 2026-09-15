@@ -9,24 +9,18 @@ const AuthUI = (() => {
   }
 
   function applyUserToChrome(user) {
-    document.getElementById('userName').innerText = user.name;
-    document.getElementById('userRole').innerText = user.role;
-    document.getElementById('userAvatar').innerText = user.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
-    document.getElementById('nav-users-btn').classList.toggle('hidden', user.role !== 'Administrator');
+    document.getElementById('display-username').innerText = `User: ${user.name} (${user.role})`;
+    document.getElementById('sidebar-users-tab').classList.toggle('hidden', user.role !== 'Administrator');
   }
 
   function showApp() {
     document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('login-screen').classList.remove('flex');
-    document.getElementById('app').classList.remove('hidden');
-    document.getElementById('app').classList.add('flex');
+    document.getElementById('app-container').style.display = 'flex';
   }
 
   function showLoginScreen() {
-    document.getElementById('app').classList.add('hidden');
-    document.getElementById('app').classList.remove('flex');
+    document.getElementById('app-container').style.display = 'none';
     document.getElementById('login-screen').classList.remove('hidden');
-    document.getElementById('login-screen').classList.add('flex');
     showLoginForm();
   }
 
@@ -42,8 +36,7 @@ const AuthUI = (() => {
       await Api.health();
     } catch {
       document.getElementById('boot-screen').classList.add('hidden');
-      document.getElementById('server-down-screen').classList.remove('hidden');
-      document.getElementById('server-down-screen').classList.add('flex');
+      document.getElementById('server-down-screen').style.display = 'flex';
       return;
     }
 
@@ -55,7 +48,7 @@ const AuthUI = (() => {
         await enterApp(user);
         return;
       } catch {
-        Api.setToken(null); // stale/expired token
+        Api.setToken(null);
       }
     }
 
@@ -73,7 +66,7 @@ const AuthUI = (() => {
       errBox.classList.add('hidden');
       const btn = document.getElementById('loginSubmitBtn');
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Signing in…';
+      btn.innerText = 'Signing in…';
 
       try {
         const { user, token } = await Api.Auth.login({
@@ -84,18 +77,18 @@ const AuthUI = (() => {
         document.getElementById('loginForm').reset();
         await enterApp(user);
       } catch (err) {
-        errBox.textContent = describeApiError(err);
-        errBox.classList.remove('hidden');
+        errBox.innerText = describeApiError(err);
+        errBox.style.display = 'block';
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Sign In';
+        btn.innerText = 'Sign In';
       }
     });
 
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const errBox = document.getElementById('registerError');
-      errBox.classList.add('hidden');
+      errBox.style.display = 'none';
 
       try {
         const { user, token } = await Api.Auth.register({
@@ -107,8 +100,8 @@ const AuthUI = (() => {
         document.getElementById('registerForm').reset();
         await enterApp(user);
       } catch (err) {
-        errBox.textContent = describeApiError(err);
-        errBox.classList.remove('hidden');
+        errBox.innerText = describeApiError(err);
+        errBox.style.display = 'block';
       }
     });
 
@@ -118,7 +111,6 @@ const AuthUI = (() => {
       showLoginScreen();
     });
 
-    // Fired by api.js whenever a request comes back 401 (e.g. expired token mid-session).
     document.addEventListener('linkroad:unauthorized', () => {
       State.currentUser = null;
       showLoginScreen();

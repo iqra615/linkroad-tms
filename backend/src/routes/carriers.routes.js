@@ -10,11 +10,14 @@ router.use(requireAuth);
 
 const bodyRules = [
   body('name').trim().notEmpty().withMessage('Name is required.'),
-  body('mc_number').optional().isString(),
-  body('phone').optional().isString(),
+  body('mc_number').optional({ checkFalsy: true }).isString(),
+  body('dot_number').optional({ checkFalsy: true }).isString(),
+  body('phone').optional({ checkFalsy: true }).isString(),
   body('email').optional({ checkFalsy: true }).isEmail().withMessage('Must be a valid email.'),
-  body('address').optional().isString(),
-  body('status').optional().isIn(['Approved', 'Pending', 'Suspended'])
+  body('city').optional({ checkFalsy: true }).isString(),
+  body('state').optional({ checkFalsy: true }).isString(),
+  body('dispatcher_name').optional({ checkFalsy: true }).isString(),
+  body('status').optional({ checkFalsy: true }).isIn(['Active', 'Pending', 'Suspended'])
 ];
 
 router.get('/', asyncHandler(controller.list));

@@ -3,88 +3,108 @@ const App = (() => {
   let confirmAction = null;
 
   const TAB_META = {
-    dashboard: { title: 'Operations Dashboard', sub: 'Real-time dispatch, carrier management, and freight billing' },
-    loads: { title: 'Load Board', sub: 'Every dispatch — customer, carrier, route, and rate' },
-    carriers: { title: 'Carriers', sub: 'Approved motor carriers available for dispatch' },
-    customers: { title: 'Customers', sub: 'Shipper / bill-to accounts' },
-    consignees: { title: 'Consignees', sub: 'Delivery locations and receiving contacts' },
-    invoices: { title: 'Customer Invoicing', sub: 'Generate, send, and track invoices for your loads' },
-    payables: { title: 'Carrier Payables', sub: 'Track carrier payments and settlements' },
-    users: { title: 'Team Access', sub: 'Manage who can sign in to this workspace' }
+    dashboard: 'Operational Dashboard',
+    loadboard: 'Load Board',
+    addload: 'Add Load',
+    customers: 'Customers',
+    consignees: 'Consignees',
+    carriers: 'Carriers',
+    invoices: 'Invoices & Payments',
+    reports: 'Reports & Analytics',
+    'users-tab': 'System Users Management'
   };
 
   async function switchTab(tab) {
     activeTab = tab;
-    document.querySelectorAll('.tab-section').forEach((el) => el.classList.add('hidden'));
-    document.getElementById('tab-' + tab).classList.remove('hidden');
-    document.querySelectorAll('.nav-btn').forEach((btn) => {
-      const isActive = btn.dataset.tab === tab;
-      const isUsersBtn = btn.id === 'nav-users-btn';
-      btn.className = 'nav-btn w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ' +
-        (isActive ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-700');
-      if (isUsersBtn && State.currentUser?.role !== 'Administrator') btn.classList.add('hidden');
-    });
-    document.getElementById('pageTitle').innerText = TAB_META[tab].title;
-    document.getElementById('pageSub').innerText = TAB_META[tab].sub;
+    document.querySelectorAll('.content-area').forEach((el) => el.classList.add('hidden'));
+    document.getElementById(tab).classList.remove('hidden');
+    document.querySelectorAll('#sidebar-nav li').forEach((li) => li.classList.toggle('active', li.dataset.tab === tab));
+    document.getElementById('page-title').innerText = TAB_META[tab] || tab;
     await renderActiveTab();
   }
 
   async function renderActiveTab() {
     try {
       if (activeTab === 'dashboard') await RenderDashboard.render();
-      else if (activeTab === 'loads') RenderLoads.render();
-      else if (activeTab === 'carriers') RenderCarriers.render();
+      else if (activeTab === 'loadboard') RenderLoads.render();
+      else if (activeTab === 'addload') renderAddLoadPage();
       else if (activeTab === 'customers') RenderCustomers.render();
       else if (activeTab === 'consignees') RenderConsignees.render();
+      else if (activeTab === 'carriers') RenderCarriers.render();
       else if (activeTab === 'invoices') RenderInvoices.render();
-      else if (activeTab === 'payables') RenderPayables.render();
-      else if (activeTab === 'users') await RenderUsers.refresh();
+      else if (activeTab === 'reports') await RenderReports.render();
+      else if (activeTab === 'users-tab') RenderUsers.render();
     } catch (err) {
       toast(describeApiError(err), 'error');
     }
   }
 
-  /** Called once, right after a successful login. */
+  function renderAddLoadPage() {
+    const container = document.getElementById('addload-form-container');
+    container.innerHTML = `
+      <div class="form-grid">
+        ${LoadForm.renderFields({}, 'addload')}
+        <div class="form-actions"><button class="btn-primary" id="addLoadSaveBtn">Save & Dispatch</button></div>
+      </div>
+    `;
+    document.getElementById('addLoadSaveBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('addLoadSaveBtn');
+      const payload = LoadForm.collectValues('addload');
+      if (!payload.entity_id) return toast('Company Entity is required.', 'error');
+      btn.disabled = true;
+      btn.innerText = 'Saving…';
+      try {
+        await Api.Loads.create(payload);
+        await refreshLoadsDependentViews();
+        toast('Load successfully created and added to the Load Board!', 'success');
+        await switchTab('loadboard');
+      } catch (err) {
+        toast(describeApiError(err), 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Save & Dispatch';
+      }
+    });
+  }
+
   async function onLogin() {
     try {
       await State.refreshAll();
-      if (State.currentUser.role === 'Administrator') await RenderUsers.refresh();
     } catch (err) {
       toast(describeApiError(err), 'error');
     }
     await switchTab('dashboard');
   }
 
-  // ---- Cross-tab refresh helpers (called by modals.js after mutations) ----
+  // ---- Cross-tab refresh helpers ----
   async function refreshLoadsDependentViews() {
     await State.refreshLoads(currentLoadQuery());
-    await State.refreshInvoices(); // amounts/joins may reference loads
-    await renderAllVisibleAndDashboard();
+    await State.refreshInvoices();
+    await renderAllVisible();
   }
   async function refreshCarriersDependentViews() {
     await State.refreshCarriers();
-    await State.refreshLoads(currentLoadQuery()); // carrier_name joins
-    await renderAllVisibleAndDashboard();
+    await State.refreshLoads(currentLoadQuery());
+    await renderAllVisible();
   }
   async function refreshCustomersDependentViews() {
     await State.refreshCustomers();
     await State.refreshLoads(currentLoadQuery());
     await State.refreshInvoices();
-    await renderAllVisibleAndDashboard();
+    await renderAllVisible();
   }
   async function refreshConsigneesDependentViews() {
     await State.refreshConsignees();
     await State.refreshLoads(currentLoadQuery());
-    await renderAllVisibleAndDashboard();
+    await renderAllVisible();
   }
   async function refreshInvoicesDependentViews() {
     await State.refreshInvoices();
-    await renderAllVisibleAndDashboard();
+    await renderAllVisible();
   }
-  async function renderAllVisibleAndDashboard() {
+  async function renderAllVisible() {
     await RenderDashboard.render();
     RenderLoads.render();
-    RenderPayables.render();
     RenderInvoices.render();
     RenderCarriers.render();
     RenderCustomers.render();
@@ -93,41 +113,74 @@ const App = (() => {
   function currentLoadQuery() {
     const search = document.getElementById('loadSearch').value.trim();
     const status = document.getElementById('loadStatusFilter').value;
+    const entityId = document.getElementById('loadEntityFilter').value;
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     if (status) params.set('status', status);
+    if (entityId) params.set('entity_id', entityId);
     return params.toString() ? `?${params}` : '';
   }
 
-  // ---------------------------------------------------------------
-  // Event delegation — one listener for the whole document, dispatched
-  // by data-* attributes so render modules stay pure (string -> DOM).
+  async function updateLoadField(loadId, patch) {
+    const existing = State.loads.find((l) => l.id === loadId);
+    if (!existing) return;
+    const payload = {
+      entity_id: existing.entity_id, load_number: existing.load_number,
+      dispatcher_user_id: existing.dispatcher_user_id, customer_id: existing.customer_id,
+      carrier_id: existing.carrier_id, consignee_id: existing.consignee_id,
+      load_type: existing.load_type, origin: existing.origin, deliver_to_address: existing.deliver_to_address,
+      empty_return_location: existing.empty_return_location,
+      container_number: existing.container_number, container_type: existing.container_type, bol_number: existing.bol_number,
+      seal_number: existing.seal_number, reference_number: existing.reference_number, pickup_number: existing.pickup_number,
+      weight: existing.weight, commodity_desc: existing.commodity_desc,
+      packages_qty: existing.packages_qty, packages_desc: existing.packages_desc,
+      eta_date: dateOnly(existing.eta_date), lfd_date: dateOnly(existing.lfd_date),
+      pickup_date: dateOnly(existing.pickup_date), delivery_date: dateOnly(existing.delivery_date),
+      empty_return_date: dateOnly(existing.empty_return_date), completed_date: dateOnly(existing.completed_date),
+      carrier_rate: existing.carrier_rate, customer_charge: existing.customer_charge,
+      status: existing.status, notes: existing.notes,
+      ...patch
+    };
+    await Api.Loads.update(loadId, payload);
+    await refreshLoadsDependentViews();
+  }
+  function dateOnly(d) { return d ? d.slice(0, 10) : null; }
+
   // ---------------------------------------------------------------
   function wireEvents() {
-    document.querySelectorAll('.nav-btn[data-tab]').forEach((btn) => {
-      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    document.querySelectorAll('#sidebar-nav li[data-tab]').forEach((li) => {
+      li.addEventListener('click', () => switchTab(li.dataset.tab));
     });
 
     document.getElementById('loadSearch').addEventListener('input', debounce(() => RenderLoads.refresh(), 300));
     document.getElementById('loadStatusFilter').addEventListener('change', () => RenderLoads.refresh());
+    document.getElementById('loadEntityFilter').addEventListener('change', () => RenderLoads.refresh());
 
     document.getElementById('entityModalCloseBtn').addEventListener('click', Modals.close);
+    document.getElementById('entitySaveBtn').addEventListener('click', () => Modals.submit());
     document.getElementById('docModalCloseBtn').addEventListener('click', Documents.close);
     document.getElementById('docDownloadBtn').addEventListener('click', Documents.download);
     document.getElementById('confirmCancelBtn').addEventListener('click', closeConfirm);
 
+    document.getElementById('reportsPeriod').addEventListener('change', () => RenderReports.refreshSummary());
+    document.getElementById('generateUserReportBtn').addEventListener('click', () => RenderReports.generateUserReport());
+    document.getElementById('exportExcelBtn').addEventListener('click', () => RenderReports.exportExcel());
+    document.getElementById('exportPdfBtn').addEventListener('click', () => RenderReports.exportPdf());
+
+    document.querySelectorAll('.cust-filter').forEach((cb) => cb.addEventListener('change', () => RenderInvoices.renderCustomerInvoices()));
+    document.querySelectorAll('.carrier-filter').forEach((cb) => cb.addEventListener('change', () => RenderInvoices.renderCarrierPayments()));
+
     document.addEventListener('click', async (e) => {
-      const t = e.target.closest('[data-open-modal], [data-close-entity-modal], [data-submit-entity], ' +
-        '[data-edit-load], [data-delete-load], [data-edit-carrier], [data-delete-carrier], ' +
-        '[data-edit-customer], [data-delete-customer], [data-edit-consignee], [data-delete-consignee], ' +
-        '[data-edit-user], [data-delete-user], [data-open-doc], [data-create-invoice], ' +
-        '[data-invoice-status], [data-delete-invoice], [data-carrier-pay]');
+      if (e.target.closest('[data-goto-addload]')) return switchTab('addload');
+
+      const t = e.target.closest('[data-open-modal], [data-edit-load], [data-delete-load], ' +
+        '[data-edit-carrier], [data-delete-carrier], [data-edit-customer], [data-delete-customer], ' +
+        '[data-edit-consignee], [data-delete-consignee], [data-edit-user], [data-delete-user], ' +
+        '[data-open-doc], [data-create-invoice]');
       if (!t) return;
 
       try {
         if (t.dataset.openModal) return Modals.open(t.dataset.openModal);
-        if (t.dataset.closeEntityModal !== undefined) return Modals.close();
-        if (t.dataset.submitEntity !== undefined) return Modals.submit();
 
         if (t.dataset.editLoad) return Modals.open('load', t.dataset.editLoad);
         if (t.dataset.deleteLoad) return openConfirm(`Delete ${t.dataset.loadLabel}? This can't be undone.`, async () => {
@@ -164,14 +217,8 @@ const App = (() => {
           toast('Deleted.', 'success');
         });
 
-        if (t.dataset.deleteInvoice) return openConfirm(`Delete ${t.dataset.invoiceLabel}? This can't be undone.`, async () => {
-          await Api.Invoices.remove(t.dataset.deleteInvoice);
-          await refreshInvoicesDependentViews();
-          toast('Deleted.', 'success');
-        });
-
         if (t.dataset.openDoc === 'rc') return Documents.openForLoad('rc', t.dataset.loadId);
-        if (t.dataset.openDoc === 'bol') return Documents.openForLoad('bol', t.dataset.loadId);
+        if (t.dataset.openDoc === 'pod') return Documents.openForLoad('pod', t.dataset.loadId);
         if (t.dataset.openDoc === 'settlement') return Documents.openForLoad('settlement', t.dataset.loadId);
         if (t.dataset.openDoc === 'invoice') return Documents.openForInvoice(t.dataset.invoiceId);
 
@@ -181,22 +228,35 @@ const App = (() => {
           toast('Invoice created.', 'success');
           return;
         }
+      } catch (err) {
+        toast(describeApiError(err), 'error');
+      }
+    });
 
-        if (t.dataset.invoiceStatus) {
-          await Api.Invoices.setStatus(t.dataset.invoiceStatus, t.dataset.statusValue);
+    document.addEventListener('change', async (e) => {
+      const t = e.target;
+      try {
+        if (t.dataset.statusSelect) {
+          const patch = { status: t.value };
+          if (t.value !== 'Completed') patch.completed_date = null;
+          await updateLoadField(t.dataset.statusSelect, patch);
+        }
+        if (t.dataset.completedDate) {
+          await updateLoadField(t.dataset.completedDate, { completed_date: t.value || null });
+        }
+        if (t.dataset.invoiceStatusSelect) {
+          await Api.Invoices.setStatus(t.dataset.invoiceStatusSelect, t.value);
           await refreshInvoicesDependentViews();
           toast('Invoice updated.', 'success');
-          return;
         }
-
-        if (t.dataset.carrierPay) {
-          await Api.Loads.setCarrierPayment(t.dataset.carrierPay, t.dataset.payValue);
+        if (t.dataset.carrierPaySelect) {
+          await Api.Loads.setCarrierPayment(t.dataset.carrierPaySelect, t.value);
           await refreshLoadsDependentViews();
           toast('Payment status updated.', 'success');
-          return;
         }
       } catch (err) {
         toast(describeApiError(err), 'error');
+        renderActiveTab();
       }
     });
   }

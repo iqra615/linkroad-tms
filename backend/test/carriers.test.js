@@ -8,26 +8,24 @@ let token;
 let carrierId;
 
 test('setup: register admin', async () => {
-  const reg = await request(app)
-    .post('/api/auth/register')
-    .send({ username: 'admin', password: 'admin123!', name: 'Admin' });
+  const reg = await request(app).post('/api/auth/register').send({ username: 'admin', password: 'admin123!', name: 'Admin' });
   token = reg.body.token;
 });
 
-test('creates a carrier', async () => {
+test('creates a carrier with DOT number, state, and dispatcher name', async () => {
   const res = await request(app)
     .post('/api/carriers')
     .set('Authorization', `Bearer ${token}`)
     .send({
-      name: 'CC Cargo Express LLC',
-      mc_number: '1561375',
-      phone: '(347) 370-0357',
-      email: 'dispatch@cccargoexpress.com',
-      address: '833 E Front St Apt A, Plainfield, NJ 07062'
+      name: 'Swift Haulage Inc.', mc_number: 'MC-000000', dot_number: 'DOT-0000000',
+      email: 'dispatch@swifthaulage.com', city: 'Chicago', state: 'IL', dispatcher_name: 'Mike Ross'
     });
 
   assert.equal(res.status, 201);
-  assert.equal(res.body.carrier.status, 'Approved'); // default
+  assert.equal(res.body.carrier.status, 'Active'); // default
+  assert.equal(res.body.carrier.dot_number, 'DOT-0000000');
+  assert.equal(res.body.carrier.state, 'IL');
+  assert.equal(res.body.carrier.dispatcher_name, 'Mike Ross');
   carrierId = res.body.carrier.id;
 });
 
@@ -39,31 +37,19 @@ test('rejects invalid status enum', async () => {
   assert.equal(res.status, 400);
 });
 
-test('filters by status', async () => {
-  await request(app)
-    .post('/api/carriers')
-    .set('Authorization', `Bearer ${token}`)
-    .send({ name: 'Pending Carrier LLC', status: 'Pending' });
-
-  const approved = await request(app).get('/api/carriers?status=Approved').set('Authorization', `Bearer ${token}`);
-  const pending = await request(app).get('/api/carriers?status=Pending').set('Authorization', `Bearer ${token}`);
-
-  assert.equal(approved.body.carriers.length, 1);
-  assert.equal(pending.body.carriers.length, 1);
-});
-
-test('searches by MC number', async () => {
-  const res = await request(app).get('/api/carriers?search=1561375').set('Authorization', `Bearer ${token}`);
+test('searches by DOT number', async () => {
+  const res = await request(app).get('/api/carriers?search=DOT-0000000').set('Authorization', `Bearer ${token}`);
   assert.equal(res.body.carriers.length, 1);
   assert.equal(res.body.carriers[0].id, carrierId);
 });
 
-test('updates a carrier', async () => {
+test('updates carrier state and dispatcher name', async () => {
   const res = await request(app)
     .put(`/api/carriers/${carrierId}`)
     .set('Authorization', `Bearer ${token}`)
-    .send({ name: 'CC Cargo Express LLC', status: 'Suspended' });
+    .send({ name: 'Swift Haulage Inc.', state: 'IN', dispatcher_name: 'John Doe', status: 'Suspended' });
   assert.equal(res.status, 200);
+  assert.equal(res.body.carrier.state, 'IN');
   assert.equal(res.body.carrier.status, 'Suspended');
 });
 

@@ -15,7 +15,7 @@ $$ LANGUAGE plpgsql;
 DO $$
 DECLARE t TEXT;
 BEGIN
-  FOREACH t IN ARRAY ARRAY['users','customers','carriers','consignees','loads','invoices'] LOOP
+  FOREACH t IN ARRAY ARRAY['entities','users','customers','carriers','consignees','loads','invoices'] LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS trg_%I_updated_at ON %I;', t, t);
     EXECUTE format(
       'CREATE TRIGGER trg_%I_updated_at BEFORE UPDATE ON %I FOR EACH ROW EXECUTE FUNCTION set_updated_at();',

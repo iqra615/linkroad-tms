@@ -1,7 +1,7 @@
 {
-  "name": "linkroad-tms-backend",
+  "name": "intermodal-tms-backend",
   "version": "1.0.0",
-  "description": "Linkroad Logistics TMS - Express/PostgreSQL backend",
+  "description": "Multi-entity Transportation Management System (Linkroad Logistics / Express Intermodal / Prime Intermodal) - Express/PostgreSQL backend",
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {

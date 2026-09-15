@@ -18,7 +18,7 @@ module.exports = {
     port: parseInt(process.env.PGPORT || '5432', 10),
     user: process.env.PGUSER || 'postgres',
     password: process.env.PGPASSWORD || 'postgres',
-    database: process.env.PGDATABASE || 'linkroad_tms',
+    database: process.env.PGDATABASE || 'intermodal_tms',
     ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : false
   },
 
@@ -28,7 +28,9 @@ module.exports = {
     expiresIn: process.env.JWT_EXPIRES_IN || '8h'
   },
 
-  corsOrigin: process.env.CORS_ORIGIN || '*',
+  corsOrigin: process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
+    : '*',
 
   bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10)
 };

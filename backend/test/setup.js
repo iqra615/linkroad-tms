@@ -27,6 +27,17 @@ function buildTestApp() {
   const schemaSql = fs.readFileSync(path.join(__dirname, '..', 'sql', 'schema.sql'), 'utf8');
   db.public.none(schemaSql);
 
+  // Real deployments always run `npm run seed` after `npm run migrate`, which
+  // creates the 3 fixed operating entities (there's no create-entity API by
+  // design — they're a closed set). Mirror that here so every test file sees
+  // the same baseline every real environment has.
+  db.public.none(`
+    INSERT INTO entities (code, name, address, email, phone, website) VALUES
+      ('LRL', 'Link Road Logistics Inc.', '16192 Coastal Hwy, Lewes, DE 19958', 'dispatch@linkroadlogistics.com', '267-283-9370', 'linkroadlogistics.com'),
+      ('EXP', 'Express Intermodal Transportation Inc', '1741 Valley Forge Rd, SUITE # 262, Worcester, PA 19490', 'dispatch@expressintermodal.net', NULL, 'expressintermodal.net'),
+      ('PIT', 'Prime Intermodal Transportation', NULL, NULL, NULL, NULL);
+  `);
+
   const { Pool } = db.adapters.createPg();
   global.__TEST_PG_POOL__ = new Pool();
 

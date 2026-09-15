@@ -10,8 +10,10 @@ router.use(requireAuth);
 
 const bodyRules = [
   body('name').trim().notEmpty().withMessage('Name is required.'),
-  body('address').optional().isString(),
-  body('contact').optional().isString()
+  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Must be a valid email.'),
+  body('address').optional({ checkFalsy: true }).isString(),
+  body('contact').optional({ checkFalsy: true }).isString(),
+  body('important_emails').optional({ checkFalsy: true }).isString()
 ];
 
 router.get('/', asyncHandler(controller.list));

@@ -20,19 +20,19 @@ async function getOne(req, res) {
 }
 
 async function create(req, res) {
-  const { name, address, contact } = req.body;
+  const { name, email, contact, address, important_emails } = req.body;
   const { rows } = await query(
-    `INSERT INTO consignees (name, address, contact) VALUES ($1, $2, $3) RETURNING *`,
-    [name, address || null, contact || null]
+    `INSERT INTO consignees (name, email, contact, address, important_emails) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+    [name, email || null, contact || null, address || null, important_emails || null]
   );
   res.status(201).json({ consignee: rows[0] });
 }
 
 async function update(req, res) {
-  const { name, address, contact } = req.body;
+  const { name, email, contact, address, important_emails } = req.body;
   const { rows } = await query(
-    `UPDATE consignees SET name = $1, address = $2, contact = $3 WHERE id = $4 RETURNING *`,
-    [name, address || null, contact || null, req.params.id]
+    `UPDATE consignees SET name = $1, email = $2, contact = $3, address = $4, important_emails = $5 WHERE id = $6 RETURNING *`,
+    [name, email || null, contact || null, address || null, important_emails || null, req.params.id]
   );
   if (!rows[0]) throw new ApiError(404, 'Consignee not found.');
   res.json({ consignee: rows[0] });

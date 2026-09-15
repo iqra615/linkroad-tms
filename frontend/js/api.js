@@ -81,6 +81,12 @@ const Api = (() => {
       remove: (id) => request(`/users/${id}`, { method: 'DELETE' })
     },
 
+    Entities: {
+      list: () => request('/entities'),
+      get: (id) => request(`/entities/${id}`),
+      update: (id, data) => request(`/entities/${id}`, { method: 'PUT', body: data })
+    },
+
     Customers: {
       list: (params = '') => request(`/customers${params}`),
       get: (id) => request(`/customers/${id}`),
@@ -125,6 +131,29 @@ const Api = (() => {
 
     Dashboard: {
       summary: () => request('/dashboard/summary')
+    },
+
+    Reports: {
+      summary: (period) => request(`/reports/summary?period=${period}`),
+      userWise: (userId, period) => request(`/reports/user-wise?user_id=${userId}&period=${period}`),
+      exportJson: (period) => request(`/reports/export?period=${period}&format=json`),
+      /** CSV needs the auth header, so it's a real fetch + blob download, not a plain link. */
+      async downloadCsv(period) {
+        const token = getToken();
+        const res = await fetch(`${BASE}/reports/export?period=${period}&format=csv`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!res.ok) throw new ApiClientError(res.status, 'Could not export the report.');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `loads_${period}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
     }
   };
 })();

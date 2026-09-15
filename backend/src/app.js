@@ -7,12 +7,13 @@ const { notFoundHandler, errorHandler } = require('./middleware/error.middleware
 
 const authRoutes = require('./routes/auth.routes');
 const usersRoutes = require('./routes/users.routes');
+const entitiesRoutes = require('./routes/entities.routes');
 const customersRoutes = require('./routes/customers.routes');
 const carriersRoutes = require('./routes/carriers.routes');
 const consigneesRoutes = require('./routes/consignees.routes');
 const loadsRoutes = require('./routes/loads.routes');
 const invoicesRoutes = require('./routes/invoices.routes');
-const dashboardRoutes = require('./routes/dashboard.routes');
+const reportsRoutes = require('./routes/reports.routes'); // defines /dashboard/summary, /reports/*
 
 function createApp() {
   const app = express();
@@ -28,12 +29,13 @@ function createApp() {
 
   app.use('/api/auth', authRoutes);
   app.use('/api/users', usersRoutes);
+  app.use('/api/entities', entitiesRoutes);
   app.use('/api/customers', customersRoutes);
   app.use('/api/carriers', carriersRoutes);
   app.use('/api/consignees', consigneesRoutes);
   app.use('/api/loads', loadsRoutes);
   app.use('/api/invoices', invoicesRoutes);
-  app.use('/api/dashboard', dashboardRoutes);
+  app.use('/api', reportsRoutes); // -> /api/dashboard/summary, /api/reports/*
 
   app.use(notFoundHandler);
   app.use(errorHandler);

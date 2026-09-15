@@ -10,9 +10,11 @@ router.use(requireAuth);
 
 const bodyRules = [
   body('name').trim().notEmpty().withMessage('Name is required.'),
+  body('contact_name').optional({ checkFalsy: true }).isString(),
+  body('phone').optional({ checkFalsy: true }).isString(),
   body('email').optional({ checkFalsy: true }).isEmail().withMessage('Must be a valid email.'),
-  body('address').optional().isString(),
-  body('terms').optional().isIn(['Net 15', 'Net 30', 'Net 45', 'Due on Receipt'])
+  body('address').optional({ checkFalsy: true }).isString(),
+  body('terms').optional({ checkFalsy: true }).isIn(['Net 15', 'Net 30', 'Net 45', 'Due on Receipt'])
 ];
 
 router.get('/', asyncHandler(controller.list));

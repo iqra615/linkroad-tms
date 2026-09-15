@@ -38,11 +38,11 @@ async function getOne(req, res) {
 async function create(req, res) {
   const { load_id, amount, due_date } = req.body;
 
-  const { rows: loadRows } = await query('SELECT id, customer_id, customer_rate FROM loads WHERE id = $1', [load_id]);
+  const { rows: loadRows } = await query('SELECT id, customer_id, customer_charge FROM loads WHERE id = $1', [load_id]);
   const load = loadRows[0];
   if (!load) throw new ApiError(404, 'Load not found.');
 
-  const finalAmount = amount !== undefined && amount !== '' ? Number(amount) : load.customer_rate;
+  const finalAmount = amount !== undefined && amount !== '' ? Number(amount) : load.customer_charge;
   if (finalAmount === null || finalAmount === undefined || Number.isNaN(finalAmount)) {
     throw new ApiError(400, 'This load has no customer rate set — provide an amount explicitly.');
   }
@@ -53,7 +53,7 @@ async function create(req, res) {
 
   const { rows } = await query(
     `INSERT INTO invoices (invoice_number, load_id, customer_id, amount, status, issued_date, due_date)
-     VALUES ($1, $2, $3, $4, 'Draft', $5, $6)
+     VALUES ($1, $2, $3, $4, 'Not Sent', $5, $6)
      RETURNING id`,
     [invoiceNumber, load_id, load.customer_id, finalAmount, issuedDate, due_date || null]
   );
@@ -75,7 +75,7 @@ async function update(req, res) {
 
 /**
  * PATCH /api/invoices/:id/status
- * Body: { status: 'Draft' | 'Sent' | 'Paid' | 'Void' }
+ * Body: { status: 'Not Sent' | 'Sent' | 'Paid' | 'Overdue' | 'Void' }
  */
 async function setStatus(req, res) {
   const { status } = req.body;

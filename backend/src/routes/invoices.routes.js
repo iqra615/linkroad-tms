@@ -35,7 +35,7 @@ router.put(
 
 router.patch(
   '/:id/status',
-  [param('id').isUUID(), body('status').isIn(['Draft', 'Sent', 'Paid', 'Void'])],
+  [param('id').isUUID(), body('status').isIn(['Not Sent', 'Sent', 'Paid', 'Overdue', 'Void'])],
   validate,
   asyncHandler(controller.setStatus)
 );

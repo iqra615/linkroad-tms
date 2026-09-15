@@ -1,29 +1,58 @@
 const RenderCarriers = (() => {
   function render() {
-    const grid = document.getElementById('carriers-grid');
+    renderAnalytics();
+    renderDirectory();
+  }
+
+  function renderAnalytics() {
+    // On-time performance proxy: % of that carrier's loads that reached Completed.
+    const byCarrier = {};
+    State.loads.forEach((l) => {
+      if (!l.carrier_id) return;
+      byCarrier[l.carrier_id] = byCarrier[l.carrier_id] || { total: 0, completed: 0, name: l.carrier_name };
+      byCarrier[l.carrier_id].total++;
+      if (l.status === 'Completed') byCarrier[l.carrier_id].completed++;
+    });
+    const items = Object.values(byCarrier)
+      .map((c) => ({ label: c.name, value: c.total ? Math.round((c.completed / c.total) * 100) : 0 }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+    renderBarChart(document.getElementById('carrier-performance-chart'), items, () => 'var(--secondary)');
+
+    const unpaid = State.loads
+      .filter((l) => l.carrier_rate != null && l.carrier_pay_status !== 'Done')
+      .reduce((sum, l) => sum + Number(l.carrier_rate), 0);
+    const totalLoadsWithCarrier = State.loads.filter((l) => l.carrier_id).length;
+    const completedLoadsWithCarrier = State.loads.filter((l) => l.carrier_id && l.status === 'Completed').length;
+    const rate = totalLoadsWithCarrier ? Math.round((completedLoadsWithCarrier / totalLoadsWithCarrier) * 100) : 0;
+
+    document.getElementById('carrier-total-active').innerText = State.carriers.filter((c) => c.status === 'Active').length;
+    document.getElementById('carrier-pending-settlements').innerText = '$' + unpaid.toLocaleString(undefined, { minimumFractionDigits: 2 });
+    document.getElementById('carrier-compliance-rate').innerText = totalLoadsWithCarrier ? `${rate}%` : '—';
+  }
+
+  function renderDirectory() {
+    const tbody = document.getElementById('carriers-table');
     if (!State.carriers.length) {
-      grid.innerHTML = emptyState('truck-front', 'No carriers yet', 'Add the motor carriers you dispatch freight to.', 'carrier');
+      tbody.innerHTML = emptyRow(9, 'No carriers yet — add the motor carriers you dispatch freight to.');
       return;
     }
-    grid.innerHTML = State.carriers.map((c) => `
-      <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-3">
-        <div class="flex justify-between items-start">
-          <div>
-            <h4 class="font-bold text-base text-white">${esc(c.name)}</h4>
-            <p class="text-xs text-slate-400 mt-0.5">MC# ${esc(c.mc_number) || '—'}</p>
-          </div>
-          <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs px-2.5 py-1 rounded-full font-medium">${esc(c.status || 'Approved')}</span>
-        </div>
-        <div class="text-xs text-slate-300 space-y-1 pt-2 border-t border-slate-700/60">
-          <p><i class="fa-solid fa-phone w-4 text-slate-500"></i> ${esc(c.phone) || '—'}</p>
-          <p><i class="fa-solid fa-envelope w-4 text-slate-500"></i> ${esc(c.email) || '—'}</p>
-          <p><i class="fa-solid fa-location-dot w-4 text-slate-500"></i> ${esc(c.address) || '—'}</p>
-        </div>
-        <div class="flex gap-2 pt-2">
-          <button data-edit-carrier="${c.id}" class="flex-1 bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded-lg"><i class="fa-solid fa-pen mr-1"></i> Edit</button>
-          <button data-delete-carrier="${c.id}" data-carrier-label="carrier ${esc(c.name)}" class="flex-1 bg-slate-700 hover:bg-red-600 text-xs py-1.5 rounded-lg"><i class="fa-solid fa-trash mr-1"></i> Delete</button>
-        </div>
-      </div>`).join('');
+    tbody.innerHTML = State.carriers.map((c) => `
+      <tr>
+        <td>${esc(c.name)}</td>
+        <td>${esc(c.email) || '—'}</td>
+        <td>${esc(c.mc_number) || '—'}</td>
+        <td>${esc(c.dot_number) || '—'}</td>
+        <td>${esc(c.city) || '—'}</td>
+        <td>${esc(c.state) || '—'}</td>
+        <td>${esc(c.dispatcher_name) || '—'}</td>
+        <td>${esc(c.status || 'Active')}</td>
+        <td>
+          <button class="btn-primary btn-sm" data-edit-carrier="${c.id}">Edit</button>
+          <button class="btn-danger btn-sm" data-delete-carrier="${c.id}" data-carrier-label="carrier ${esc(c.name)}">Delete</button>
+        </td>
+      </tr>`).join('');
   }
+
   return { render };
 })();
