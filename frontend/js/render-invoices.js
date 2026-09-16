@@ -30,7 +30,7 @@ const RenderInvoices = (() => {
             ${['Not Sent', 'Sent', 'Paid', 'Overdue', 'Void'].map((s) => `<option value="${s}" ${inv.status === s ? 'selected' : ''}>${s}</option>`).join('')}
           </select>
         </td>
-        <td>${dateOrDash(inv.paid_date)}</td>
+        <td>${inv.paid_date ? dateOrDash(inv.paid_date) : (inv.due_date ? `<span class="text-muted">Due: ${dateOrDash(inv.due_date)}</span>` : '—')}</td>
         <td><button class="btn-primary btn-sm" data-open-doc="invoice" data-invoice-id="${inv.id}">Print Invoice</button></td>
       </tr>`).join('');
   }

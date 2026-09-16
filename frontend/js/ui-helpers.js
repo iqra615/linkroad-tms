@@ -61,6 +61,12 @@ function entityBadge(code) {
   return `<span class="badge ${entityBadgeClass(code)}">${esc(code || '—')}</span>`;
 }
 
+function loadTypeBadge(type) {
+  if (!type) return '';
+  const isImport = type.startsWith('Import');
+  return `<span class="badge" style="background:${isImport ? '#e0f2fe' : '#fff7ed'};color:${isImport ? '#0369a1' : '#c2410c'};">${esc(type)}</span>`;
+}
+
 function emptyRow(colspan, message) {
   return `<tr><td colspan="${colspan}" style="text-align:center;color:#64748b;padding:30px;">${esc(message)}</td></tr>`;
 }

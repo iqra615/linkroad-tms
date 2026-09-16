@@ -69,7 +69,9 @@
 <div id="app-container">
   <aside>
     <div class="logo">
-      <img src="logos/lrl.png" alt="LRL"><img src="logos/exp.png" alt="EXP"><img src="logos/pit.png" alt="PIT">
+      <div class="logo-row">
+        <img src="logos/lrl.png" alt="LRL"><img src="logos/exp.png" alt="EXP"><img src="logos/pit.png" alt="PIT">
+      </div>
       <span>Intermodal TMS</span>
     </div>
     <ul id="sidebar-nav">
@@ -154,18 +156,7 @@
         <label><input type="radio" name="loadOwnerFilter" id="loadFilterAll" value="all" checked> Show All Loads</label>
         <label><input type="checkbox" id="loadFilterHideCompleted"> Hide Completed Loads</label>
       </div>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>LOAD#</th><th>CO.</th><th>USER</th><th>TYPE</th><th>CUSTOMER</th><th>CONSIGNEE</th>
-              <th>DELIVER TO</th><th>PICKUP DATE</th><th>DELIVERY DATE</th><th>EMPTY RETURN</th><th>ETA/LFD</th>
-              <th>STATUS</th><th>CARRIER RATE</th><th>CUSTOMER CHARGE</th><th>GROSS PROFIT</th><th>ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody id="full-loads-table"></tbody>
-        </table>
-      </div>
+      <div id="full-loads-cards" style="display:flex;flex-direction:column;gap:14px;margin-top:15px;"></div>
     </div>
 
     <!-- ADD LOAD -->

@@ -277,6 +277,25 @@ async function seed() {
     console.log(`✔ Created load: ${l.load_number}`);
   }
 
+  // --- Backfill realistic dates onto every seeded load (guarded so real edits never get clobbered) ---
+  const LOAD_DATES = {
+    'LRL-1001': { pickup_date: '2026-08-18', delivery_date: '2026-08-22', empty_return_date: '2026-08-25', eta_date: '2026-08-17', lfd_date: '2026-08-24' },
+    'EXP-3409': { pickup_date: '2026-07-24', delivery_date: '2026-07-27', empty_return_date: '2026-07-30', eta_date: '2026-07-23', lfd_date: '2026-07-29' },
+    'PIT-3475': { pickup_date: '2026-07-27', delivery_date: '2026-07-30', empty_return_date: '2026-08-02', eta_date: '2026-07-26', lfd_date: '2026-08-01' },
+    'LRL-1002': { pickup_date: '2026-08-20', delivery_date: '2026-08-24', empty_return_date: '2026-08-27', eta_date: '2026-08-19', lfd_date: '2026-08-26' },
+    'EXP-3410': { pickup_date: '2026-08-15', delivery_date: '2026-08-19', empty_return_date: '2026-08-22', eta_date: '2026-08-14', lfd_date: '2026-08-21' },
+    'PIT-3477': { pickup_date: '2026-08-22', delivery_date: '2026-08-25', empty_return_date: '2026-08-28', eta_date: '2026-08-21', lfd_date: '2026-08-27' }
+  };
+  for (const [loadNumber, dates] of Object.entries(LOAD_DATES)) {
+    const { rows } = await query('SELECT pickup_date FROM loads WHERE load_number = $1', [loadNumber]);
+    if (rows.length && !rows[0].pickup_date) {
+      await query(
+        `UPDATE loads SET pickup_date = $1, delivery_date = $2, empty_return_date = $3, eta_date = $4, lfd_date = $5 WHERE load_number = $6`,
+        [dates.pickup_date, dates.delivery_date, dates.empty_return_date, dates.eta_date, dates.lfd_date, loadNumber]
+      );
+    }
+  }
+
   // --- A few invoices in different statuses, so Invoices & Payments isn't empty ---
   const { rows: invoiceableLoads } = await query(
     `SELECT id, load_number FROM loads WHERE load_number IN ('LRL-1001','EXP-3409','PIT-3475','PIT-3477') ORDER BY load_number`
@@ -290,10 +309,11 @@ async function seed() {
     const { rows: loadData } = await query('SELECT customer_id, customer_charge FROM loads WHERE id = $1', [load.id]);
     const paidDate = status === 'Paid' ? '2026-08-16' : null;
     const issuedDate = '2026-08-01';
+    const dueDate = '2026-08-31'; // Net 30 from issued date — shown as a fallback until an invoice is actually paid
     await query(
-      `INSERT INTO invoices (invoice_number, load_id, customer_id, amount, status, issued_date, paid_date)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [`INV-${seqRows[0].n}`, load.id, loadData[0].customer_id, loadData[0].customer_charge, status, issuedDate, paidDate]
+      `INSERT INTO invoices (invoice_number, load_id, customer_id, amount, status, issued_date, due_date, paid_date)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [`INV-${seqRows[0].n}`, load.id, loadData[0].customer_id, loadData[0].customer_charge, status, issuedDate, dueDate, paidDate]
     );
     console.log(`✔ Created invoice for ${load.load_number} (${status})`);
   }
