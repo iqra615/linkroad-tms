@@ -56,7 +56,7 @@ const RenderLoads = (() => {
     const loads = applyOwnerAndCompletedFilters(State.loads);
 
     if (!loads.length) {
-      tbody.innerHTML = emptyRow(16, 'No loads match your filters.');
+      tbody.innerHTML = emptyRow(18, 'No loads match your filters.');
       return;
     }
 
@@ -65,6 +65,8 @@ const RenderLoads = (() => {
         <td><button class="clickable-link" data-view-load="${l.id}">${esc(l.load_number)}</button></td>
         <td>${entityBadge(l.entity_code)}</td>
         <td>${esc(l.dispatcher_user_name) || '<span class="text-muted">—</span>'}</td>
+        <td class="text-muted">${esc(l.container_number) || '—'}</td>
+        <td class="text-muted">${esc(l.weight) || '—'}</td>
         <td>${loadTypeBadge(l.load_type) || '—'}</td>
         <td>${esc(l.customer_name) || '<span class="text-muted">—</span>'}</td>
         <td>${esc(l.consignee_name) || '<span class="text-muted">—</span>'}</td>
