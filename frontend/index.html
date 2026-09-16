@@ -96,12 +96,41 @@
 
     <!-- DASHBOARD -->
     <div id="dashboard" class="content-area">
+      <div class="card" style="margin-bottom: 20px;">
+        <h3 style="text-transform:none;font-size:0.95rem;color:var(--primary);">⚡ Quick Actions &amp; Links</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+          <button class="btn-primary" data-goto-addload>+ Add New Load</button>
+          <button class="btn-primary" data-goto-tab="carriers">🚚 Add / View Carrier</button>
+          <button class="btn-primary" data-goto-tab="customers">🏢 Add / View Customer</button>
+          <button class="btn-primary" data-goto-tab="consignees">📍 Add / View Consignee</button>
+          <button class="btn-primary" data-goto-tab="invoices">💳 View Invoices &amp; Payments</button>
+          <button class="btn-primary" data-goto-tab="reports">📊 Financial Reports</button>
+        </div>
+      </div>
+
       <div class="stats-grid" id="dashboard-stats">
         <div class="card"><h3>Monthly Loads</h3><div class="value" id="stat-monthly-loads">0</div></div>
+        <div class="card"><h3>Available for Pickup</h3><div class="value" id="stat-available-pickup">0</div></div>
         <div class="card"><h3>Find Carrier</h3><div class="value" id="stat-find-carrier">0</div></div>
-        <div class="card"><h3>Completed</h3><div class="value" id="stat-completed">0</div></div>
-        <div class="card"><h3>Gross Revenue</h3><div class="value" id="stat-gross-revenue" style="color:var(--success);">$0</div></div>
+        <div class="card"><h3>Completed (Month)</h3><div class="value" id="stat-completed">0</div></div>
       </div>
+      <div class="stats-grid" style="margin-top:-10px;">
+        <div class="card"><h3>Pending Customer Invoices</h3><div class="value" id="stat-pending-invoices" style="font-size:1.6rem;">0</div></div>
+        <div class="card"><h3>Pending Carrier Payments</h3><div class="value" id="stat-pending-payments" style="font-size:1.6rem;">0</div></div>
+        <div class="card"><h3>MTD Gross Revenue</h3><div class="value" id="stat-gross-revenue" style="color:var(--success);font-size:1.6rem;">$0</div></div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Weekly Load Volume Trend</h3>
+          <div class="bar-chart-mock" id="weekly-volume-chart"></div>
+        </div>
+        <div class="chart-card">
+          <h3>Shipment Status Breakdown</h3>
+          <div id="status-breakdown-chart" style="display:flex;align-items:center;gap:20px;padding:10px 0;"></div>
+        </div>
+      </div>
+
       <div class="table-container">
         <table>
           <thead><tr><th>Load #</th><th>Company</th><th>Customer</th><th>Route</th><th>Status</th><th style="text-align:right;">Action</th></tr></thead>
@@ -112,15 +141,18 @@
 
     <!-- LOAD BOARD -->
     <div id="loadboard" class="content-area hidden">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center; flex-wrap: wrap; gap: 10px;">
         <input type="text" id="loadSearch" placeholder="Search by Container or Load #..." style="padding: 8px 12px; width: 280px; border: 1px solid var(--border); border-radius: 6px;">
         <select id="loadEntityFilter" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;"></select>
         <select id="loadStatusFilter" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
           <option value="">All statuses</option>
-          <option>Available for Pickup</option><option>Find Carrier</option><option>Customs Hold</option>
-          <option>In Transit</option><option>Completed</option>
         </select>
         <button class="btn-primary" data-goto-addload>+ Create New Load</button>
+      </div>
+      <div class="filter-container" style="justify-content:flex-start;gap:20px;">
+        <label><input type="radio" name="loadOwnerFilter" id="loadFilterMine" value="mine"> Show Only My Loads</label>
+        <label><input type="radio" name="loadOwnerFilter" id="loadFilterAll" value="all" checked> Show All Loads</label>
+        <label><input type="checkbox" id="loadFilterHideCompleted"> Hide Completed Loads</label>
       </div>
       <div class="table-container">
         <table>

@@ -27,25 +27,74 @@ function validatePeriod(period) {
   return period || 'current_month';
 }
 
+const STATUS_BUCKETS = {
+  'Pending Pickup': ['New Load', 'Available for Pickup', 'Pickup Scheduled', 'At Port', 'Gate Out', 'Find Carrier', 'Carrier Assigned'],
+  'In Transit': ['Picked Up', 'In Transit', 'Delivery Scheduled', 'At Delivery', 'Delivered', 'POD Pending', 'Empty Pending', 'Empty / POD Pending', 'Empty Return Scheduled', 'Empty Returned'],
+  'Completed': ['Completed'],
+  'Holds / Issues': ['Customs Hold', 'Freight Hold', 'Exam Site', 'Driver Delayed', 'Port Congestion', 'Cancelled']
+};
+function bucketForStatus(status) {
+  for (const [bucket, statuses] of Object.entries(STATUS_BUCKETS)) {
+    if (statuses.includes(status)) return bucket;
+  }
+  return 'Pending Pickup';
+}
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 /**
  * GET /api/dashboard/summary
- * The "Operational Dashboard" tab: Monthly Loads / Find Carrier / Completed / Gross Revenue.
+ * The "Operational Dashboard" tab: stat cards + a weekly volume chart + a status breakdown.
  */
 async function operationalSummary(req, res) {
   const { from, to } = periodBounds('current_month');
 
-  const [monthlyLoads, findCarrier, completed, grossRevenue] = await Promise.all([
+  // Monday of the current week, for the weekly volume chart.
+  const now = new Date();
+  const dow = now.getUTCDay(); // 0 = Sunday
+  const daysSinceMonday = (dow + 6) % 7;
+  const weekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysSinceMonday));
+  const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const [
+    monthlyLoads, findCarrier, completed, grossRevenue, availableForPickup,
+    pendingCustomerInvoices, pendingCarrierPayments, weekLoads, allStatuses
+  ] = await Promise.all([
     query(`SELECT COUNT(*)::int AS count FROM loads WHERE created_at >= $1 AND created_at < $2`, [from, to]),
     query(`SELECT COUNT(*)::int AS count FROM loads WHERE status = 'Find Carrier'`),
     query(`SELECT COUNT(*)::int AS count FROM loads WHERE status = 'Completed' AND created_at >= $1 AND created_at < $2`, [from, to]),
-    query(`SELECT COALESCE(SUM(customer_charge), 0)::numeric AS total FROM loads WHERE created_at >= $1 AND created_at < $2`, [from, to])
+    query(`SELECT COALESCE(SUM(customer_charge), 0)::numeric AS total FROM loads WHERE created_at >= $1 AND created_at < $2`, [from, to]),
+    query(`SELECT COUNT(*)::int AS count FROM loads WHERE status = 'Available for Pickup'`),
+    query(`SELECT COUNT(*)::int AS count FROM invoices WHERE status NOT IN ('Paid', 'Void')`),
+    query(`SELECT COUNT(*)::int AS count FROM loads WHERE carrier_rate IS NOT NULL AND carrier_pay_status != 'Done'`),
+    query(`SELECT created_at FROM loads WHERE created_at >= $1 AND created_at < $2`, [weekStart, weekEnd]),
+    query(`SELECT status FROM loads`)
   ]);
+
+  const weeklyCounts = [0, 0, 0, 0, 0, 0, 0]; // Mon..Sun
+  weekLoads.rows.forEach((r) => {
+    const d = new Date(r.created_at).getUTCDay();
+    weeklyCounts[(d + 6) % 7]++;
+  });
+  const weeklyVolume = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => ({ day, count: weeklyCounts[i] }));
+
+  const bucketCounts = { 'Pending Pickup': 0, 'In Transit': 0, 'Completed': 0, 'Holds / Issues': 0 };
+  allStatuses.rows.forEach((r) => { bucketCounts[bucketForStatus(r.status)]++; });
+  const totalLoads = allStatuses.rows.length || 1;
+  const statusBreakdown = Object.entries(bucketCounts).map(([label, count]) => ({
+    label, count, pct: Math.round((count / totalLoads) * 100)
+  }));
 
   res.json({
     monthlyLoads: monthlyLoads.rows[0].count,
     findCarrier: findCarrier.rows[0].count,
     completed: completed.rows[0].count,
-    grossRevenue: Number(grossRevenue.rows[0].total)
+    grossRevenue: Number(grossRevenue.rows[0].total),
+    availableForPickup: availableForPickup.rows[0].count,
+    pendingCustomerInvoices: pendingCustomerInvoices.rows[0].count,
+    pendingCarrierPayments: pendingCarrierPayments.rows[0].count,
+    weeklyVolume,
+    statusBreakdown
   });
 }
 

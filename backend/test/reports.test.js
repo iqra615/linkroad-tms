@@ -37,6 +37,14 @@ test('operational dashboard summary counts correctly', async () => {
   assert.equal(res.body.findCarrier, 1);
   assert.equal(res.body.completed, 1);
   assert.equal(res.body.grossRevenue, 1500 + 1200 + 700);
+  assert.equal(res.body.availableForPickup, 1); // load 3, the unassigned one, keeps its default status
+  assert.ok(Array.isArray(res.body.weeklyVolume) && res.body.weeklyVolume.length === 7);
+  assert.deepEqual(res.body.weeklyVolume.map((d) => d.day), ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+  const totalFromWeekly = res.body.weeklyVolume.reduce((sum, d) => sum + d.count, 0);
+  assert.equal(totalFromWeekly, 3); // all 3 loads were just created, so they land in this week
+  assert.ok(Array.isArray(res.body.statusBreakdown) && res.body.statusBreakdown.length === 4);
+  const totalFromBreakdown = res.body.statusBreakdown.reduce((sum, b) => sum + b.count, 0);
+  assert.equal(totalFromBreakdown, 3);
 });
 
 test('financial summary computes revenue, expenses, and margin for current_month', async () => {

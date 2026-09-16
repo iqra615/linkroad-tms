@@ -32,7 +32,9 @@ const State = {
 
   /** Loads every reference + transactional list in parallel. Call after login and after any create/delete that could affect other tabs. */
   async refreshAll() {
-    await Promise.all([
+    // Use allSettled, not all: one endpoint failing (e.g. a missing route on
+    // a partially-deployed backend) should not blank out every other tab.
+    const results = await Promise.allSettled([
       this.refreshEntities(),
       this.refreshCustomers(),
       this.refreshCarriers(),
@@ -41,6 +43,11 @@ const State = {
       this.refreshInvoices(),
       this.refreshUsersIfAdmin()
     ]);
+    const failed = results.filter((r) => r.status === 'rejected');
+    if (failed.length) {
+      console.error('Some data failed to load:', failed.map((f) => f.reason));
+      toast(`${failed.length} part(s) of the app failed to load — the backend may be running outdated code. Check the console for details.`, 'error');
+    }
   }
 };
 

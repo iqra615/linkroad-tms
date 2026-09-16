@@ -163,6 +163,141 @@ async function seed() {
     console.log('• Sample Prime Intermodal load already exists, skipping.');
   }
 
+  // --- Additional customers (matching the reference mockup's customer list) ---
+  const CUSTOMERS = [
+    { name: 'Global Imports Co.', contact_name: 'John Smith', phone: '(555) 019-2834', email: 'john@globalimports.com', terms: 'Net 30' },
+    { name: 'Pacific Retail LLC', contact_name: 'Maria Chen', phone: '(555) 220-4471', email: 'ap@pacificretail.com', terms: 'Net 30' },
+    { name: 'Apex Goods', contact_name: 'David Okafor', phone: '(555) 887-2200', email: 'billing@apexgoods.com', terms: 'Net 45' },
+    { name: 'Global Freight', contact_name: 'Sarah Lin', phone: '(555) 401-9982', email: 'accounts@globalfreight.com', terms: 'Net 30' }
+  ];
+  const customerIds = {};
+  for (const c of CUSTOMERS) {
+    const { rows } = await query('SELECT id FROM customers WHERE name = $1', [c.name]);
+    if (rows.length) { customerIds[c.name] = rows[0].id; continue; }
+    const inserted = await query(
+      `INSERT INTO customers (name, contact_name, phone, email, terms) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+      [c.name, c.contact_name, c.phone, c.email, c.terms]
+    );
+    customerIds[c.name] = inserted.rows[0].id;
+    console.log(`✔ Created customer: ${c.name}`);
+  }
+
+  // --- Additional carriers (matching the reference mockup's carrier list) ---
+  const CARRIERS = [
+    { name: 'Swift Haulage Inc.', mc: 'MC-883920', dot: 'DOT-3920192', city: 'Chicago', state: 'IL', dispatcher: 'Mike Ross', email: 'dispatch@swifthaulage.com' },
+    { name: 'Apex Freight Lines', mc: 'MC-441207', dot: 'DOT-7712054', city: 'Newark', state: 'NJ', dispatcher: 'Harvey Specter', email: 'dispatch@apexfreight.com' },
+    { name: 'Express Trucking Co.', mc: 'MC-556310', dot: 'DOT-9042871', city: 'Atlanta', state: 'GA', dispatcher: 'Rachel Zane', email: 'dispatch@expresstrucking.com' }
+  ];
+  const carrierIds = { 'CC Cargo Express LLC': carrierRows[0].id };
+  for (const c of CARRIERS) {
+    const { rows } = await query('SELECT id FROM carriers WHERE name = $1', [c.name]);
+    if (rows.length) { carrierIds[c.name] = rows[0].id; continue; }
+    const inserted = await query(
+      `INSERT INTO carriers (name, mc_number, dot_number, city, state, dispatcher_name, email, status) VALUES ($1,$2,$3,$4,$5,$6,$7,'Active') RETURNING id`,
+      [c.name, c.mc, c.dot, c.city, c.state, c.dispatcher, c.email]
+    );
+    carrierIds[c.name] = inserted.rows[0].id;
+    console.log(`✔ Created carrier: ${c.name}`);
+  }
+
+  // --- Additional consignees (matching the reference mockup's consignee list) ---
+  const CONSIGNEES = [
+    { name: 'Local Retail Inc.', email: 'receiving@localretail.com', contact: '(312) 555-0199', address: '100 N LaSalle St, Chicago, IL', important_emails: 'mgr@localretail.com, ops@localretail.com' },
+    { name: 'Port Authority LLC', email: 'dock@portauthority.org', contact: '(201) 555-8821', address: '400 Dock St, Newark, NJ', important_emails: 'supervisor@portauthority.org' }
+  ];
+  const consigneeIds = { 'Schindler Elevator Corp': consigneeRows[0].id };
+  for (const c of CONSIGNEES) {
+    const { rows } = await query('SELECT id FROM consignees WHERE name = $1', [c.name]);
+    if (rows.length) { consigneeIds[c.name] = rows[0].id; continue; }
+    const inserted = await query(
+      `INSERT INTO consignees (name, email, contact, address, important_emails) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
+      [c.name, c.email, c.contact, c.address, c.important_emails]
+    );
+    consigneeIds[c.name] = inserted.rows[0].id;
+    console.log(`✔ Created consignee: ${c.name}`);
+  }
+  const { rows: sikaLookup } = await query('SELECT id FROM consignees WHERE name = $1', ['Sika Corporation']);
+  if (sikaLookup.length) consigneeIds['Sika Corporation'] = sikaLookup[0].id;
+
+  // --- Backfill customer + pricing onto the 3 original seed loads, so they're invoice-ready ---
+  const { rows: lrl1001 } = await query('SELECT customer_id FROM loads WHERE load_number = $1', ['LRL-1001']);
+  if (lrl1001.length && !lrl1001[0].customer_id) {
+    await query(
+      `UPDATE loads SET customer_id = $1, customer_charge = $2, status = $3 WHERE load_number = $4`,
+      [customerIds['Global Imports Co.'], 1850, 'In Transit', 'LRL-1001']
+    );
+  }
+  const { rows: exp3409 } = await query('SELECT customer_id FROM loads WHERE load_number = $1', ['EXP-3409']);
+  if (exp3409.length && !exp3409[0].customer_id) {
+    await query(
+      `UPDATE loads SET customer_id = $1, customer_charge = $2, carrier_rate = $3, carrier_id = $4 WHERE load_number = $5`,
+      [customerIds['Apex Goods'], 1600, 980, carrierIds['Apex Freight Lines'], 'EXP-3409']
+    );
+  }
+  const { rows: pit3475 } = await query('SELECT customer_id FROM loads WHERE load_number = $1', ['PIT-3475']);
+  if (pit3475.length && !pit3475[0].customer_id) {
+    await query(
+      `UPDATE loads SET customer_id = $1, customer_charge = $2, carrier_rate = $3, carrier_id = $4 WHERE load_number = $5`,
+      [customerIds['Pacific Retail LLC'], 1550, 1100, carrierIds['Express Trucking Co.'], 'PIT-3475']
+    );
+  }
+
+  // --- A handful more loads across all 3 entities for richer boards, charts, and invoices ---
+  const MORE_LOADS = [
+    {
+      load_number: 'LRL-1002', entity: 'LRL', customer: 'Pacific Retail LLC', consignee: 'Local Retail Inc.', carrier: 'Swift Haulage Inc.',
+      load_type: 'Export', origin: 'Port of Savannah, GA', deliver_to_address: 'Warehouse A, Chicago, IL',
+      container_number: 'TGHU7654321', status: 'Find Carrier', carrier_rate: 980, customer_charge: 1600
+    },
+    {
+      load_number: 'EXP-3410', entity: 'EXP', customer: 'Global Freight', consignee: 'Port Authority LLC', carrier: 'Apex Freight Lines',
+      load_type: 'Import', origin: 'Port Elizabeth, NJ', deliver_to_address: 'Pier 4 Terminal, NJ',
+      container_number: 'CMAU9876543', status: 'Customs Hold', carrier_rate: 1100, customer_charge: 1550
+    },
+    {
+      load_number: 'PIT-3477', entity: 'PIT', customer: 'Global Imports Co.', consignee: 'Local Retail Inc.', carrier: 'Express Trucking Co.',
+      load_type: 'Import', origin: 'Newark Port, NJ', deliver_to_address: 'Depot B, NY',
+      container_number: 'OOLU1122334', status: 'Completed', completed_date: '2026-08-26', carrier_rate: 900, customer_charge: 1300
+    }
+  ];
+  for (const l of MORE_LOADS) {
+    const { rows: exists } = await query('SELECT id FROM loads WHERE load_number = $1', [l.load_number]);
+    if (exists.length) { console.log(`• Load ${l.load_number} already exists, skipping.`); continue; }
+    await query(
+      `INSERT INTO loads (
+         load_number, entity_id, customer_id, consignee_id, carrier_id, load_type, origin, deliver_to_address,
+         container_number, status, completed_date, carrier_rate, customer_charge
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+      [
+        l.load_number, entityIds[l.entity], customerIds[l.customer], consigneeIds[l.consignee], carrierIds[l.carrier],
+        l.load_type, l.origin, l.deliver_to_address, l.container_number, l.status, l.completed_date || null,
+        l.carrier_rate, l.customer_charge
+      ]
+    );
+    console.log(`✔ Created load: ${l.load_number}`);
+  }
+
+  // --- A few invoices in different statuses, so Invoices & Payments isn't empty ---
+  const { rows: invoiceableLoads } = await query(
+    `SELECT id, load_number FROM loads WHERE load_number IN ('LRL-1001','EXP-3409','PIT-3475','PIT-3477') ORDER BY load_number`
+  );
+  const INVOICE_STATUSES = { 'LRL-1001': 'Overdue', 'EXP-3409': 'Paid', 'PIT-3475': 'Sent', 'PIT-3477': 'Not Sent' };
+  for (const load of invoiceableLoads) {
+    const { rows: existingInv } = await query('SELECT id FROM invoices WHERE load_id = $1', [load.id]);
+    if (existingInv.length) continue;
+    const status = INVOICE_STATUSES[load.load_number] || 'Not Sent';
+    const { rows: seqRows } = await query(`SELECT nextval('invoice_number_seq') AS n`);
+    const { rows: loadData } = await query('SELECT customer_id, customer_charge FROM loads WHERE id = $1', [load.id]);
+    const paidDate = status === 'Paid' ? '2026-08-16' : null;
+    const issuedDate = '2026-08-01';
+    await query(
+      `INSERT INTO invoices (invoice_number, load_id, customer_id, amount, status, issued_date, paid_date)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [`INV-${seqRows[0].n}`, load.id, loadData[0].customer_id, loadData[0].customer_charge, status, issuedDate, paidDate]
+    );
+    console.log(`✔ Created invoice for ${load.load_number} (${status})`);
+  }
+
   console.log('Done.');
 }
 

@@ -19,6 +19,25 @@ const RenderLoads = (() => {
     sel.dataset.populated = '1';
   }
 
+  function populateStatusFilter() {
+    const sel = document.getElementById('loadStatusFilter');
+    if (sel.dataset.populated) return;
+    sel.innerHTML = `<option value="">All statuses</option>` +
+      LoadForm.STATUSES.map((s) => `<option value="${s}">${s}</option>`).join('');
+    sel.dataset.populated = '1';
+  }
+
+  function applyOwnerAndCompletedFilters(loads) {
+    let result = loads;
+    if (document.getElementById('loadFilterMine').checked) {
+      result = result.filter((l) => l.dispatcher_user_id === State.currentUser?.id);
+    }
+    if (document.getElementById('loadFilterHideCompleted').checked) {
+      result = result.filter((l) => l.status !== 'Completed');
+    }
+    return result;
+  }
+
   function grossProfit(l) {
     if (l.carrier_rate == null || l.customer_charge == null) return '—';
     return money(Number(l.customer_charge) - Number(l.carrier_rate));
@@ -32,8 +51,9 @@ const RenderLoads = (() => {
 
   function render() {
     populateEntityFilter();
+    populateStatusFilter();
     const tbody = document.getElementById('full-loads-table');
-    const loads = State.loads;
+    const loads = applyOwnerAndCompletedFilters(State.loads);
 
     if (!loads.length) {
       tbody.innerHTML = emptyRow(16, 'No loads match your filters.');
@@ -42,7 +62,7 @@ const RenderLoads = (() => {
 
     tbody.innerHTML = loads.map((l) => `
       <tr class="${statusRowClass(l.status)}">
-        <td><button class="clickable-link" data-edit-load="${l.id}">${esc(l.load_number)}</button></td>
+        <td><button class="clickable-link" data-view-load="${l.id}">${esc(l.load_number)}</button></td>
         <td>${entityBadge(l.entity_code)}</td>
         <td>${esc(l.dispatcher_user_name) || '<span class="text-muted">—</span>'}</td>
         <td>${esc(l.load_type) || '—'}</td>
@@ -57,18 +77,20 @@ const RenderLoads = (() => {
           <select class="status-select" data-status-select="${l.id}">
             ${LoadForm.STATUSES.map((s) => `<option value="${s}" ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}
           </select>
-          ${l.status === 'Completed' ? `<br><input type="date" class="date-input" style="margin-top:4px;" data-completed-date="${l.id}" value="${l.completed_date ? l.completed_date.slice(0, 10) : ''}">` : ''}
         </td>
         <td>${l.carrier_rate != null ? money(l.carrier_rate) : '—'}</td>
         <td>${l.customer_charge != null ? money(l.customer_charge) : '—'}</td>
         <td style="font-weight:bold;color:var(--success);">${grossProfit(l)}</td>
         <td>
-          <button class="btn-primary btn-sm" data-open-doc="rc" data-load-id="${l.id}">Create RC</button>
-          <button class="btn-primary btn-sm" data-open-doc="pod" data-load-id="${l.id}">Create POD</button>
-          <button class="btn-danger btn-sm" data-delete-load="${l.id}" data-load-label="load ${esc(l.load_number)}">Delete</button>
-          ${l.customer_id && l.customer_charge != null
-            ? `<br><button class="clickable-link" style="margin-top:4px;" data-create-invoice="${l.id}">+ Create Invoice</button>`
-            : ''}
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:110px;">
+            <button class="btn-primary btn-sm" style="margin:0;" data-edit-load="${l.id}">Edit</button>
+            <button class="btn-primary btn-sm" style="margin:0;" data-open-doc="rc" data-load-id="${l.id}">Create RC</button>
+            <button class="btn-primary btn-sm" style="margin:0;" data-open-doc="pod" data-load-id="${l.id}">Create POD</button>
+            <button class="btn-danger btn-sm" style="margin:0;" data-delete-load="${l.id}" data-load-label="load ${esc(l.load_number)}">Delete</button>
+            ${l.customer_id && l.customer_charge != null
+              ? `<button class="clickable-link" style="margin:0;font-size:0.75rem;" data-create-invoice="${l.id}">+ Create Invoice</button>`
+              : ''}
+          </div>
         </td>
       </tr>`).join('');
   }

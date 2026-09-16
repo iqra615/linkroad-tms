@@ -15,10 +15,10 @@ router.get('/', asyncHandler(usersController.list));
 router.post(
   '/',
   [
-    body('username').trim().isLength({ min: 3, max: 64 }),
-    body('password').isLength({ min: 8 }),
-    body('name').trim().notEmpty(),
-    body('role').isIn(ROLES)
+    body('username').trim().isLength({ min: 3, max: 64 }).withMessage('Username must be 3-64 characters.'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters.'),
+    body('name').trim().notEmpty().withMessage('Full name is required.'),
+    body('role').isIn(ROLES).withMessage(`Role must be one of: ${ROLES.join(', ')}.`)
   ],
   validate,
   asyncHandler(usersController.create)
@@ -28,9 +28,9 @@ router.put(
   '/:id',
   [
     param('id').isUUID(),
-    body('name').optional().trim().notEmpty(),
-    body('role').optional().isIn(ROLES),
-    body('password').optional().isLength({ min: 8 })
+    body('name').optional().trim().notEmpty().withMessage('Full name cannot be empty.'),
+    body('role').optional().isIn(ROLES).withMessage(`Role must be one of: ${ROLES.join(', ')}.`),
+    body('password').optional().isLength({ min: 8 }).withMessage('Password must be at least 8 characters.')
   ],
   validate,
   asyncHandler(usersController.update)

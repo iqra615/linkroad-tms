@@ -1,5 +1,6 @@
 const Modals = (() => {
   let saveHandler = null;
+  let pendingEditId = null; // set by openDetail(); submit() checks this before doing a normal save
 
   function val(id) {
     const el = document.getElementById(id);
@@ -10,14 +11,57 @@ const Modals = (() => {
     return `<option value="">${placeholder}</option>` + list.map((x) => `<option value="${x.id}" ${x.id === selectedId ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
   }
 
+  function openDetail(id) {
+    const l = State.loads.find((x) => x.id === id);
+    if (!l) return toast('Load not found — try refreshing.', 'error');
+
+    document.getElementById('entityModalTitle').innerText = `Load ${l.load_number}`;
+    document.getElementById('entityModalBody').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:0.9rem;">
+        <div><strong>Company:</strong> ${entityBadge(l.entity_code)}</div>
+        <div><strong>Status:</strong> ${esc(l.status)}</div>
+        <div><strong>Assigned User:</strong> ${esc(l.dispatcher_user_name) || '—'}</div>
+        <div><strong>Shipment Type:</strong> ${esc(l.load_type) || '—'}</div>
+        <div><strong>Customer:</strong> ${esc(l.customer_name) || '—'}</div>
+        <div><strong>Consignee:</strong> ${esc(l.consignee_name) || '—'}</div>
+        <div><strong>Pickup Location:</strong> ${esc(l.origin) || '—'}</div>
+        <div><strong>Deliver To:</strong> ${esc(l.deliver_to_address) || '—'}</div>
+        <div><strong>Container #:</strong> ${esc(l.container_number) || '—'}</div>
+        <div><strong>Container Type:</strong> ${esc(l.container_type) || '—'}</div>
+        <div><strong>Master BOL:</strong> ${esc(l.bol_number) || '—'}</div>
+        <div><strong>Weight:</strong> ${esc(l.weight) || '—'}</div>
+        <div><strong>Pickup Date:</strong> ${dateOrDash(l.pickup_date)}</div>
+        <div><strong>Delivery Date:</strong> ${dateOrDash(l.delivery_date)}</div>
+        <div><strong>Empty Return:</strong> ${dateOrDash(l.empty_return_date)}</div>
+        <div><strong>ETA / LFD:</strong> ${dateOrDash(l.eta_date)} / ${dateOrDash(l.lfd_date)}</div>
+        <div><strong>Carrier:</strong> ${esc(l.carrier_name) || '—'}</div>
+        <div><strong>Carrier Rate:</strong> ${l.carrier_rate != null ? money(l.carrier_rate) : '—'}</div>
+        <div><strong>Customer Charge:</strong> ${l.customer_charge != null ? money(l.customer_charge) : '—'}</div>
+        <div><strong>Gross Profit:</strong> ${l.carrier_rate != null && l.customer_charge != null ? money(Number(l.customer_charge) - Number(l.carrier_rate)) : '—'}</div>
+      </div>
+      ${l.notes ? `<div style="margin-top:14px;background:#f1f5f9;border-radius:6px;padding:10px;font-size:0.85rem;"><strong>Notes:</strong> ${esc(l.notes)}</div>` : ''}
+    `;
+
+    // Detail view has no "Save" action — repurpose the shared button as "Edit".
+    // submit() (the single click handler wired in app.js) checks pendingEditId
+    // and branches accordingly, so we never register a second click listener.
+    document.getElementById('entitySaveBtn').innerText = 'Edit';
+    saveHandler = null;
+    pendingEditId = id;
+
+    showModal('entityModal');
+  }
+
   function open(type, id) {
     const title = document.getElementById('entityModalTitle');
     const body = document.getElementById('entityModalBody');
     const isEdit = !!id;
 
-    // Reset the shared Save button's state every time a modal opens — it's one
-    // static element reused across every entity type, so without this reset it
-    // would stay stuck disabled/"Saving…" after the very first successful save.
+    // Reset the shared Save button's state every time a form modal opens — it's
+    // one static element reused for every entity type and for the detail view's
+    // repurposed "Edit" button, so without this reset it could stay stuck on a
+    // stale label/state from whatever was open before.
+    pendingEditId = null;
     const saveBtn = document.getElementById('entitySaveBtn');
     saveBtn.disabled = false;
     saveBtn.innerText = 'Save';
@@ -158,9 +202,16 @@ const Modals = (() => {
   function close() {
     hideModal('entityModal');
     saveHandler = null;
+    pendingEditId = null;
   }
 
   async function submit() {
+    if (pendingEditId) {
+      const id = pendingEditId;
+      pendingEditId = null;
+      return open('load', id);
+    }
+
     const btn = document.getElementById('entitySaveBtn');
     const originalText = btn.innerText;
     btn.disabled = true;
@@ -178,5 +229,5 @@ const Modals = (() => {
     }
   }
 
-  return { open, close, submit };
+  return { open, openDetail, close, submit };
 })();

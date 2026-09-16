@@ -24,9 +24,16 @@ const LoadForm = (() => {
     return `<div class="form-group"><label>${esc(label)}</label>${inputHtml}</div>`;
   }
 
-  /** Renders the full form-grid. idPrefix keeps IDs unique between the Add Load page and the Edit modal. */
-  function renderFields(l = {}, idPrefix) {
+  /** Renders the full form-grid. idPrefix keeps IDs unique between the Add Load page and the Edit modal.
+   *  Pass { hideActualDates: true } on the creation page — those 3 fields only make sense once a load
+   *  is already underway, so they're edit-only. */
+  function renderFields(l = {}, idPrefix, options = {}) {
     const id = (name) => `${idPrefix}_${name}`;
+    const actualDatesSection = options.hideActualDates ? '' : `
+      ${field(id('pickupDate'), 'Actual Pickup Date', `<input type="date" id="${id('pickupDate')}" value="${esc((l.pickup_date || '').slice(0, 10))}">`)}
+      ${field(id('deliveryDate'), 'Actual Delivery Date', `<input type="date" id="${id('deliveryDate')}" value="${esc((l.delivery_date || '').slice(0, 10))}">`)}
+      ${field(id('emptyReturnDate'), 'Actual Empty Return Date', `<input type="date" id="${id('emptyReturnDate')}" value="${esc((l.empty_return_date || '').slice(0, 10))}">`)}
+    `;
     return `
       ${field(id('dispatcherUserId'), 'Assigned User', `<select id="${id('dispatcherUserId')}">${optFromRecords(State.users, l.dispatcher_user_id, '— Unassigned —')}</select>`)}
       ${field(id('entityId'), 'Company Entity', `<select id="${id('entityId')}">${State.entities.map((e) => `<option value="${e.id}" ${e.id === l.entity_id ? 'selected' : ''}>${esc(e.name)}</option>`).join('')}</select>`)}
@@ -49,7 +56,8 @@ const LoadForm = (() => {
       ${field(id('customerCharge'), 'Customer Charges ($)', `<input type="number" step="0.01" min="0" id="${id('customerCharge')}" placeholder="0.00" value="${l.customer_charge ?? ''}" oninput="LoadForm.calcProfit('${idPrefix}')">`)}
 
       ${field(id('grossProfit'), 'Gross Profit ($)', `<input type="text" id="${id('grossProfit')}" readonly style="background:#f1f5f9;font-weight:bold;" value="${grossProfitText(l)}">`)}
-      ${field(id('status'), 'Status', `<select id="${id('status')}">${opt(STATUSES, l.status || 'Available for Pickup')}</select>`)}
+      ${field(id('status'), 'Status', `<select id="${id('status')}" onchange="LoadForm.toggleCompletedDate('${idPrefix}')">${opt(STATUSES, l.status || 'Available for Pickup')}</select>`)}
+      ${field(id('completedDate'), 'Completed Date', `<input type="date" id="${id('completedDate')}" value="${esc((l.completed_date || '').slice(0, 10))}" ${l.status === 'Completed' ? '' : 'disabled'}>`)}
       ${field(id('weight'), 'Weight', `<input type="text" id="${id('weight')}" placeholder="e.g. 12956.000 KG" value="${esc(l.weight || '')}">`)}
 
       ${field(id('sealNumber'), 'Seal #', `<input type="text" id="${id('sealNumber')}" value="${esc(l.seal_number || '')}">`)}
@@ -60,9 +68,7 @@ const LoadForm = (() => {
       ${field(id('packagesDesc'), 'Packages Description', `<input type="text" id="${id('packagesDesc')}" placeholder="e.g. General Cargo" value="${esc(l.packages_desc || '')}">`)}
       <div></div>
 
-      ${field(id('pickupDate'), 'Actual Pickup Date', `<input type="date" id="${id('pickupDate')}" value="${esc((l.pickup_date || '').slice(0, 10))}">`)}
-      ${field(id('deliveryDate'), 'Actual Delivery Date', `<input type="date" id="${id('deliveryDate')}" value="${esc((l.delivery_date || '').slice(0, 10))}">`)}
-      ${field(id('emptyReturnDate'), 'Actual Empty Return Date', `<input type="date" id="${id('emptyReturnDate')}" value="${esc((l.empty_return_date || '').slice(0, 10))}">`)}
+      ${actualDatesSection}
 
       <div class="form-group" style="grid-column: 1 / -1;"><label>Notes</label><textarea id="${id('notes')}" rows="2">${esc(l.notes || '')}</textarea></div>
     `;
@@ -79,6 +85,13 @@ const LoadForm = (() => {
     const cr = parseFloat(document.getElementById(`${idPrefix}_carrierRate`).value) || 0;
     const cc = parseFloat(document.getElementById(`${idPrefix}_customerCharge`).value) || 0;
     document.getElementById(`${idPrefix}_grossProfit`).value = '$' + (cc - cr).toFixed(2);
+  }
+
+  function toggleCompletedDate(idPrefix) {
+    const status = document.getElementById(`${idPrefix}_status`).value;
+    const dateInput = document.getElementById(`${idPrefix}_completedDate`);
+    dateInput.disabled = status !== 'Completed';
+    if (status !== 'Completed') dateInput.value = '';
   }
 
   function val(id) {
@@ -105,6 +118,7 @@ const LoadForm = (() => {
       carrier_rate: val(id('carrierRate')) || '',
       customer_charge: val(id('customerCharge')) || '',
       status: val(id('status')),
+      completed_date: val(id('completedDate')) || null,
       weight: val(id('weight')),
       seal_number: val(id('sealNumber')),
       reference_number: val(id('referenceNumber')),
@@ -118,5 +132,5 @@ const LoadForm = (() => {
     };
   }
 
-  return { renderFields, collectValues, calcProfit, LOAD_TYPES, CONTAINER_TYPES, STATUSES };
+  return { renderFields, collectValues, calcProfit, toggleCompletedDate, LOAD_TYPES, CONTAINER_TYPES, STATUSES };
 })();

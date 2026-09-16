@@ -43,7 +43,7 @@ const App = (() => {
     const container = document.getElementById('addload-form-container');
     container.innerHTML = `
       <div class="form-grid">
-        ${LoadForm.renderFields({}, 'addload')}
+        ${LoadForm.renderFields({}, 'addload', { hideActualDates: true })}
         <div class="form-actions"><button class="btn-primary" id="addLoadSaveBtn">Save & Dispatch</button></div>
       </div>
     `;
@@ -154,6 +154,9 @@ const App = (() => {
 
     document.getElementById('loadSearch').addEventListener('input', debounce(() => RenderLoads.refresh(), 300));
     document.getElementById('loadStatusFilter').addEventListener('change', () => RenderLoads.refresh());
+    document.getElementById('loadFilterMine').addEventListener('change', () => RenderLoads.render());
+    document.getElementById('loadFilterAll').addEventListener('change', () => RenderLoads.render());
+    document.getElementById('loadFilterHideCompleted').addEventListener('change', () => RenderLoads.render());
     document.getElementById('loadEntityFilter').addEventListener('change', () => RenderLoads.refresh());
 
     document.getElementById('entityModalCloseBtn').addEventListener('click', Modals.close);
@@ -172,8 +175,10 @@ const App = (() => {
 
     document.addEventListener('click', async (e) => {
       if (e.target.closest('[data-goto-addload]')) return switchTab('addload');
+      const gotoTabBtn = e.target.closest('[data-goto-tab]');
+      if (gotoTabBtn) return switchTab(gotoTabBtn.dataset.gotoTab);
 
-      const t = e.target.closest('[data-open-modal], [data-edit-load], [data-delete-load], ' +
+      const t = e.target.closest('[data-open-modal], [data-view-load], [data-edit-load], [data-delete-load], ' +
         '[data-edit-carrier], [data-delete-carrier], [data-edit-customer], [data-delete-customer], ' +
         '[data-edit-consignee], [data-delete-consignee], [data-edit-user], [data-delete-user], ' +
         '[data-open-doc], [data-create-invoice]');
@@ -182,6 +187,7 @@ const App = (() => {
       try {
         if (t.dataset.openModal) return Modals.open(t.dataset.openModal);
 
+        if (t.dataset.viewLoad) return Modals.openDetail(t.dataset.viewLoad);
         if (t.dataset.editLoad) return Modals.open('load', t.dataset.editLoad);
         if (t.dataset.deleteLoad) return openConfirm(`Delete ${t.dataset.loadLabel}? This can't be undone.`, async () => {
           await Api.Loads.remove(t.dataset.deleteLoad);
