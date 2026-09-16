@@ -64,8 +64,8 @@ header h1 { font-size: 1.4rem; color: var(--primary); }
 /* Tables */
 .table-container { background: var(--white); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; margin-top: 15px; margin-bottom: 25px; overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; text-align: left; }
-th { background: #f1f5f9; padding: 12px 15px; font-size: 0.8rem; font-weight: 600; color: #475569; border-bottom: 1px solid var(--border); white-space: nowrap; }
-td { padding: 12px 15px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+th { background: #f1f5f9; padding: 18px 20px; font-size: 0.85rem; font-weight: 700; color: #334155; border-bottom: 1px solid var(--border); white-space: nowrap; letter-spacing: 0.2px; }
+td { padding: 18px 20px; border-bottom: 1px solid var(--border); font-size: 0.95rem; line-height: 1.5; }
 tr:hover { background: #f8fafc; }
 
 /* Forms & Buttons */
@@ -80,10 +80,10 @@ button:hover { opacity: 0.9; }
 .btn-primary { background: var(--secondary); color: var(--white); }
 .btn-success { background: var(--success); color: var(--white); }
 .btn-danger { background: var(--danger); color: var(--white); }
-.btn-sm { padding: 4px 8px; font-size: 0.75rem; margin-right: 4px; }
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; margin-right: 4px; }
 .clickable-link { color: var(--secondary); text-decoration: underline; cursor: pointer; font-weight: bold; background: none; border: none; padding: 0; font-size: inherit; }
 
-.status-select { padding: 5px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem; background: var(--white); font-weight: 600; }
+.status-select { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.88rem; background: var(--white); font-weight: 600; }
 .date-input { padding: 5px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem; }
 
 /* Modal Overlay */
@@ -131,22 +131,18 @@ tr.status-hold { background-color: #fecaca !important; }
 .toast.error { background: var(--danger); }
 @keyframes toastin { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Load Board cards */
-.load-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.03); border-left: 5px solid var(--secondary); }
-.load-card.status-completed { border-left-color: var(--success); background: #f0fdf9; }
-.load-card.status-cancelled { border-left-color: var(--danger); background: #fef2f2; }
-.load-card.status-find-carrier { border-left-color: #0ea5e9; background: #f0f9ff; }
-.load-card.status-hold { border-left-color: var(--danger); background: #fef2f2; }
-.load-card-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border); }
-.load-card-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px 16px; margin-bottom:14px; }
-.load-card-field label { display:block; font-size:0.68rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.3px; margin-bottom:2px; }
-.load-card-field .value { font-size:0.88rem; color:var(--text); }
-.load-card-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-.load-card-actions button { margin:0; }
+/* Action button cells: never let neighboring columns squeeze these into wrapping */
+td.actions-cell { white-space: nowrap; }
+td.actions-cell > * { display: inline-flex; }
+.btn-row { display: inline-flex; gap: 6px; flex-wrap: nowrap; align-items: center; }
+
+
+
 
 .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; }
 .badge-entity-lrl { background: #dbeafe; color: #1e40af; }
 .badge-entity-exp { background: #fee2e2; color: #991b1b; }
 .badge-entity-pit { background: #e0e7ff; color: #3730a3; }
 .hidden { display: none !important; }
+.admin-only-col.role-hidden { display: none !important; }
 .text-muted { color: #64748b; }

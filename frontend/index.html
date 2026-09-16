@@ -81,8 +81,8 @@
       <li data-tab="customers">Customers</li>
       <li data-tab="consignees">Consignees</li>
       <li data-tab="carriers">Carriers</li>
-      <li data-tab="invoices">Invoices & Payments</li>
-      <li data-tab="reports">Reports & Analytics</li>
+      <li id="sidebar-invoices-tab" data-tab="invoices">Invoices & Payments</li>
+      <li id="sidebar-reports-tab" data-tab="reports">Reports & Analytics</li>
       <li id="sidebar-users-tab" data-tab="users-tab" class="hidden">Users</li>
     </ul>
   </aside>
@@ -105,8 +105,8 @@
           <button class="btn-primary" data-goto-tab="carriers">🚚 Add / View Carrier</button>
           <button class="btn-primary" data-goto-tab="customers">🏢 Add / View Customer</button>
           <button class="btn-primary" data-goto-tab="consignees">📍 Add / View Consignee</button>
-          <button class="btn-primary" data-goto-tab="invoices">💳 View Invoices &amp; Payments</button>
-          <button class="btn-primary" data-goto-tab="reports">📊 Financial Reports</button>
+          <button class="btn-primary" data-goto-tab="invoices" id="quickaction-invoices">💳 View Invoices &amp; Payments</button>
+          <button class="btn-primary" data-goto-tab="reports" id="quickaction-reports">📊 Financial Reports</button>
         </div>
       </div>
 
@@ -116,7 +116,7 @@
         <div class="card"><h3>Find Carrier</h3><div class="value" id="stat-find-carrier">0</div></div>
         <div class="card"><h3>Completed (Month)</h3><div class="value" id="stat-completed">0</div></div>
       </div>
-      <div class="stats-grid" style="margin-top:-10px;">
+      <div class="stats-grid" style="margin-top:-10px;" id="dashboard-revenue-stats">
         <div class="card"><h3>Pending Customer Invoices</h3><div class="value" id="stat-pending-invoices" style="font-size:1.6rem;">0</div></div>
         <div class="card"><h3>Pending Carrier Payments</h3><div class="value" id="stat-pending-payments" style="font-size:1.6rem;">0</div></div>
         <div class="card"><h3>MTD Gross Revenue</h3><div class="value" id="stat-gross-revenue" style="color:var(--success);font-size:1.6rem;">$0</div></div>
@@ -156,7 +156,18 @@
         <label><input type="radio" name="loadOwnerFilter" id="loadFilterAll" value="all" checked> Show All Loads</label>
         <label><input type="checkbox" id="loadFilterHideCompleted"> Hide Completed Loads</label>
       </div>
-      <div id="full-loads-cards" style="display:flex;flex-direction:column;gap:14px;margin-top:15px;"></div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>LOAD#</th><th>CO.</th><th>USER</th><th>TYPE</th><th>CUSTOMER</th><th>CONSIGNEE</th>
+              <th>DELIVER TO</th><th>PICKUP DATE</th><th>DELIVERY DATE</th><th>EMPTY RETURN</th><th>ETA/LFD</th>
+              <th>STATUS</th><th>CARRIER RATE</th><th>CUSTOMER CHARGE</th><th class="admin-only-col">GROSS PROFIT</th><th>ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody id="full-loads-table"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ADD LOAD -->
@@ -352,15 +363,15 @@
 
 <!-- DOCUMENT MODAL (Rate Confirmation / POD / Invoice / Settlement) -->
 <div id="docModal" class="modal">
-  <div class="modal-content" style="width: 700px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+  <div class="modal-content" style="width: 780px; padding: 36px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;">
       <h2 id="docModalTitle" style="color: var(--primary);">Document</h2>
       <div style="display:flex;gap:8px;">
         <button id="docDownloadBtn" class="btn-success btn-sm">⬇ Download PDF</button>
         <button id="docModalCloseBtn" class="btn-sm" style="background:#cbd5e1;color:var(--text);">✕</button>
       </div>
     </div>
-    <div id="docBody" style="font-size:0.85rem;"></div>
+    <div id="docBody" style="font-size:0.92rem;line-height:1.6;"></div>
   </div>
 </div>
 

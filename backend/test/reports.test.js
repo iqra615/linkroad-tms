@@ -103,3 +103,35 @@ test('export as CSV returns a downloadable CSV file', async () => {
   assert.equal(lines.length, 4); // header + 3 rows
   assert.match(lines[0], /Load #,Entity,Status/);
 });
+
+test('a Dispatcher cannot see the Reports & Analytics page at all', async () => {
+  const dispatcher = await request(app).post('/api/users').set('Authorization', `Bearer ${token}`)
+    .send({ username: 'jdispatch2', password: 'password123', name: 'Jane Dispatcher', role: 'Dispatcher' });
+  const login = await request(app).post('/api/auth/login').send({ username: 'jdispatch2', password: 'password123' });
+  const dispatcherToken = login.body.token;
+
+  const summary = await request(app).get('/api/reports/summary?period=current_month').set('Authorization', `Bearer ${dispatcherToken}`);
+  assert.equal(summary.status, 403);
+  const userWise = await request(app).get(`/api/reports/user-wise?user_id=${dispatcherId}`).set('Authorization', `Bearer ${dispatcherToken}`);
+  assert.equal(userWise.status, 403);
+  const exp = await request(app).get('/api/reports/export?period=current_month').set('Authorization', `Bearer ${dispatcherToken}`);
+  assert.equal(exp.status, 403);
+});
+
+test('a Dispatcher can still see the Operational Dashboard, but with revenue/profit fields stripped out', async () => {
+  const login = await request(app).post('/api/auth/login').send({ username: 'jdispatch2', password: 'password123' });
+  const dispatcherToken = login.body.token;
+
+  const res = await request(app).get('/api/dashboard/summary').set('Authorization', `Bearer ${dispatcherToken}`);
+  assert.equal(res.status, 200);
+  assert.ok('monthlyLoads' in res.body);
+  assert.ok(!('grossRevenue' in res.body), 'grossRevenue must not be sent to a Dispatcher');
+  assert.ok(!('pendingCustomerInvoices' in res.body), 'pendingCustomerInvoices must not be sent to a Dispatcher');
+  assert.ok(!('pendingCarrierPayments' in res.body), 'pendingCarrierPayments must not be sent to a Dispatcher');
+});
+
+test('an Administrator still sees the full Operational Dashboard including revenue', async () => {
+  const res = await request(app).get('/api/dashboard/summary').set('Authorization', `Bearer ${token}`);
+  assert.equal(res.status, 200);
+  assert.ok('grossRevenue' in res.body);
+});

@@ -10,7 +10,16 @@ const AuthUI = (() => {
 
   function applyUserToChrome(user) {
     document.getElementById('display-username').innerText = `User: ${user.name} (${user.role})`;
-    document.getElementById('sidebar-users-tab').classList.toggle('hidden', user.role !== 'Administrator');
+    const isAdmin = user.role === 'Administrator';
+    document.getElementById('sidebar-users-tab').classList.toggle('hidden', !isAdmin);
+    // Company policy: Invoices & Payments and Reports & Analytics are Administrator-only,
+    // as are the revenue/profit figures on the Dashboard.
+    document.getElementById('sidebar-invoices-tab').classList.toggle('hidden', !isAdmin);
+    document.getElementById('sidebar-reports-tab').classList.toggle('hidden', !isAdmin);
+    document.getElementById('quickaction-invoices').classList.toggle('hidden', !isAdmin);
+    document.getElementById('quickaction-reports').classList.toggle('hidden', !isAdmin);
+    document.getElementById('dashboard-revenue-stats').classList.toggle('hidden', !isAdmin);
+    applyRoleVisibility();
   }
 
   function showApp() {

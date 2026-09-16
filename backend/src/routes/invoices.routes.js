@@ -1,12 +1,14 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const { validate } = require('../middleware/validate.middleware');
-const { requireAuth } = require('../middleware/auth.middleware');
+const { requireAuth, requireRole } = require('../middleware/auth.middleware');
 const { asyncHandler } = require('../middleware/error.middleware');
 const controller = require('../controllers/invoices.controller');
 
 const router = express.Router();
 router.use(requireAuth);
+// Per company policy: only Administrators can see invoicing/payment data.
+router.use(requireRole('Administrator'));
 
 router.get('/', asyncHandler(controller.list));
 router.get('/:id', [param('id').isUUID()], validate, asyncHandler(controller.getOne));

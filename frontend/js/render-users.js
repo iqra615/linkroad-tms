@@ -19,10 +19,10 @@ const RenderUsers = (() => {
         <td>${esc(u.username)}</td>
         <td>${esc(u.name)}</td>
         <td>${esc(u.role)}</td>
-        <td>
+        <td class="actions-cell"><div class="btn-row">
           <button class="btn-primary btn-sm" data-edit-user="${u.id}">Edit</button>
           ${u.id !== State.currentUser.id ? `<button class="btn-danger btn-sm" data-delete-user="${u.id}" data-user-label="user ${esc(u.username)}">Delete</button>` : ''}
-        </td>
+        </div></td>
       </tr>`).join('');
   }
 

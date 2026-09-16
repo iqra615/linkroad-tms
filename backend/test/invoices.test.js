@@ -51,3 +51,16 @@ test('deletes an invoice', async () => {
   const res = await request(app).delete(`/api/invoices/${invoiceId}`).set('Authorization', `Bearer ${token}`);
   assert.equal(res.status, 204);
 });
+
+test('a Dispatcher cannot see or touch invoices at all', async () => {
+  const dispatcher = await request(app).post('/api/users').set('Authorization', `Bearer ${token}`)
+    .send({ username: 'jdispatch', password: 'password123', name: 'John Dispatcher', role: 'Dispatcher' });
+  const login = await request(app).post('/api/auth/login').send({ username: 'jdispatch', password: 'password123' });
+  const dispatcherToken = login.body.token;
+
+  const list = await request(app).get('/api/invoices').set('Authorization', `Bearer ${dispatcherToken}`);
+  assert.equal(list.status, 403);
+
+  const create = await request(app).post('/api/invoices').set('Authorization', `Bearer ${dispatcherToken}`).send({ load_id: loadWithRateId });
+  assert.equal(create.status, 403);
+});

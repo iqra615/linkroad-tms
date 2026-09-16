@@ -4,14 +4,14 @@ const Documents = (() => {
   let currentInvoice = null;
 
   const S = {
-    box: 'background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;',
-    label: 'font-weight:700;color:#0f172a;text-transform:uppercase;font-size:10px;margin-bottom:4px;',
-    row: 'display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #e2e8f0;padding-bottom:14px;margin-bottom:14px;',
-    grid2: 'display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;',
-    grid3: 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;',
-    table: 'width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:14px;',
-    th: 'background:#f1f5f9;text-align:left;padding:8px 10px;font-weight:700;color:#1e293b;',
-    td: 'padding:8px 10px;border-top:1px solid #e2e8f0;'
+    box: 'background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;',
+    label: 'font-weight:700;color:#0f172a;text-transform:uppercase;font-size:11px;margin-bottom:6px;letter-spacing:0.4px;',
+    row: 'display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #e2e8f0;padding-bottom:20px;margin-bottom:20px;',
+    grid2: 'display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;',
+    grid3: 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:20px;',
+    table: 'width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:20px;',
+    th: 'background:#f1f5f9;text-align:left;padding:12px 14px;font-weight:700;color:#1e293b;',
+    td: 'padding:12px 14px;border-top:1px solid #e2e8f0;line-height:1.5;'
   };
 
   function entityFor(load) {

@@ -85,16 +85,20 @@ async function operationalSummary(req, res) {
     label, count, pct: Math.round((count / totalLoads) * 100)
   }));
 
+  const isAdmin = req.user.role === 'Administrator';
   res.json({
     monthlyLoads: monthlyLoads.rows[0].count,
     findCarrier: findCarrier.rows[0].count,
     completed: completed.rows[0].count,
-    grossRevenue: Number(grossRevenue.rows[0].total),
     availableForPickup: availableForPickup.rows[0].count,
-    pendingCustomerInvoices: pendingCustomerInvoices.rows[0].count,
-    pendingCarrierPayments: pendingCarrierPayments.rows[0].count,
     weeklyVolume,
-    statusBreakdown
+    statusBreakdown,
+    // Revenue/profit-adjacent figures are Administrator-only per company policy.
+    ...(isAdmin ? {
+      grossRevenue: Number(grossRevenue.rows[0].total),
+      pendingCustomerInvoices: pendingCustomerInvoices.rows[0].count,
+      pendingCarrierPayments: pendingCarrierPayments.rows[0].count
+    } : {})
   });
 }
 

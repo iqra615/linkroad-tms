@@ -12,10 +12,10 @@ const RenderConsignees = (() => {
         <td>${esc(c.contact) || '—'}</td>
         <td>${esc(c.address) || '—'}</td>
         <td>${esc(c.important_emails) || '—'}</td>
-        <td>
+        <td class="actions-cell"><div class="btn-row">
           <button class="btn-primary btn-sm" data-edit-consignee="${c.id}">Edit</button>
           <button class="btn-danger btn-sm" data-delete-consignee="${c.id}" data-consignee-label="consignee ${esc(c.name)}">Delete</button>
-        </td>
+        </div></td>
       </tr>`).join('');
   }
   return { render };

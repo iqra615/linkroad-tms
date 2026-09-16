@@ -95,3 +95,11 @@ function renderBarChart(containerEl, items, colorFn) {
       }).join('')
     : `<p style="color:#94a3b8;font-size:0.85rem;align-self:center;">No data yet.</p>`;
 }
+
+/** Re-applies role-based visibility rules — must be called after every re-render
+ *  of a table containing .admin-only-col cells, since those cells are recreated
+ *  from scratch each time and don't inherit the class toggle from login time. */
+function applyRoleVisibility() {
+  const isAdmin = State.currentUser?.role === 'Administrator';
+  document.querySelectorAll('.admin-only-col').forEach((el) => el.classList.toggle('role-hidden', !isAdmin));
+}

@@ -47,10 +47,10 @@ const RenderCarriers = (() => {
         <td>${esc(c.state) || '—'}</td>
         <td>${esc(c.dispatcher_name) || '—'}</td>
         <td>${esc(c.status || 'Active')}</td>
-        <td>
+        <td class="actions-cell"><div class="btn-row">
           <button class="btn-primary btn-sm" data-edit-carrier="${c.id}">Edit</button>
           <button class="btn-danger btn-sm" data-delete-carrier="${c.id}" data-carrier-label="carrier ${esc(c.name)}">Delete</button>
-        </td>
+        </div></td>
       </tr>`).join('');
   }
 

@@ -41,10 +41,10 @@ const RenderCustomers = (() => {
         <td>${esc(c.email) || '—'}</td>
         <td>${esc(c.phone) || '—'}</td>
         <td>${money(c.outstanding_balance)}</td>
-        <td>
+        <td class="actions-cell"><div class="btn-row">
           <button class="btn-primary btn-sm" data-edit-customer="${c.id}">Edit</button>
           <button class="btn-danger btn-sm" data-delete-customer="${c.id}" data-customer-label="customer ${esc(c.name)}">Delete</button>
-        </td>
+        </div></td>
       </tr>`).join('');
   }
 

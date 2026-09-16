@@ -14,7 +14,13 @@ const App = (() => {
     'users-tab': 'System Users Management'
   };
 
+  const ADMIN_ONLY_TABS = ['invoices', 'reports', 'users-tab'];
+
   async function switchTab(tab) {
+    if (ADMIN_ONLY_TABS.includes(tab) && State.currentUser?.role !== 'Administrator') {
+      toast('You do not have permission to view that page.', 'error');
+      tab = 'dashboard';
+    }
     activeTab = tab;
     document.querySelectorAll('.content-area').forEach((el) => el.classList.add('hidden'));
     document.getElementById(tab).classList.remove('hidden');

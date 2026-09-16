@@ -52,52 +52,48 @@ const RenderLoads = (() => {
   function render() {
     populateEntityFilter();
     populateStatusFilter();
-    const container = document.getElementById('full-loads-cards');
+    const tbody = document.getElementById('full-loads-table');
     const loads = applyOwnerAndCompletedFilters(State.loads);
 
     if (!loads.length) {
-      container.innerHTML = `<div class="card" style="text-align:center;color:#64748b;">No loads match your filters. <button class="clickable-link" data-open-modal="load">Add one</button></div>`;
+      tbody.innerHTML = emptyRow(16, 'No loads match your filters.');
       return;
     }
 
-    container.innerHTML = loads.map((l) => `
-      <div class="load-card ${statusRowClass(l.status)}">
-        <div class="load-card-header">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <button class="clickable-link" style="font-size:1.05rem;" data-view-load="${l.id}">${esc(l.load_number)}</button>
-            ${entityBadge(l.entity_code)}
-            ${loadTypeBadge(l.load_type)}
-          </div>
+    tbody.innerHTML = loads.map((l) => `
+      <tr class="${statusRowClass(l.status)}">
+        <td><button class="clickable-link" data-view-load="${l.id}">${esc(l.load_number)}</button></td>
+        <td>${entityBadge(l.entity_code)}</td>
+        <td>${esc(l.dispatcher_user_name) || '<span class="text-muted">—</span>'}</td>
+        <td>${loadTypeBadge(l.load_type) || '—'}</td>
+        <td>${esc(l.customer_name) || '<span class="text-muted">—</span>'}</td>
+        <td>${esc(l.consignee_name) || '<span class="text-muted">—</span>'}</td>
+        <td class="text-muted">${esc(l.deliver_to_address) || '—'}</td>
+        <td>${dateOrDash(l.pickup_date)}</td>
+        <td>${dateOrDash(l.delivery_date)}</td>
+        <td>${dateOrDash(l.empty_return_date)}</td>
+        <td class="text-muted">${etaLfd(l)}</td>
+        <td>
           <select class="status-select" data-status-select="${l.id}">
             ${LoadForm.STATUSES.map((s) => `<option value="${s}" ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}
           </select>
-        </div>
-
-        <div class="load-card-grid">
-          <div class="load-card-field"><label>User</label><div class="value">${esc(l.dispatcher_user_name) || '<span class="text-muted">—</span>'}</div></div>
-          <div class="load-card-field"><label>Customer</label><div class="value">${esc(l.customer_name) || '<span class="text-muted">—</span>'}</div></div>
-          <div class="load-card-field"><label>Consignee</label><div class="value">${esc(l.consignee_name) || '<span class="text-muted">—</span>'}</div></div>
-          <div class="load-card-field"><label>Deliver To</label><div class="value text-muted">${esc(l.deliver_to_address) || '—'}</div></div>
-          <div class="load-card-field"><label>Pickup Date</label><div class="value">${dateOrDash(l.pickup_date)}</div></div>
-          <div class="load-card-field"><label>Delivery Date</label><div class="value">${dateOrDash(l.delivery_date)}</div></div>
-          <div class="load-card-field"><label>Empty Return</label><div class="value">${dateOrDash(l.empty_return_date)}</div></div>
-          <div class="load-card-field"><label>ETA / LFD</label><div class="value text-muted">${etaLfd(l)}</div></div>
-          <div class="load-card-field"><label>Miles</label><div class="value text-muted">${l.estimated_miles ? esc(l.estimated_miles) + ' mi' : '—'}</div></div>
-          <div class="load-card-field"><label>Carrier Rate</label><div class="value">${l.carrier_rate != null ? money(l.carrier_rate) : '—'}</div></div>
-          <div class="load-card-field"><label>Customer Charge</label><div class="value">${l.customer_charge != null ? money(l.customer_charge) : '—'}</div></div>
-          <div class="load-card-field"><label>Gross Profit</label><div class="value" style="font-weight:bold;color:var(--success);">${grossProfit(l)}</div></div>
-        </div>
-
-        <div class="load-card-actions">
-          <button class="btn-primary btn-sm" data-edit-load="${l.id}">Edit</button>
-          <button class="btn-primary btn-sm" data-open-doc="rc" data-load-id="${l.id}">Create RC</button>
-          <button class="btn-primary btn-sm" data-open-doc="pod" data-load-id="${l.id}">Create POD</button>
-          <button class="btn-danger btn-sm" data-delete-load="${l.id}" data-load-label="load ${esc(l.load_number)}">Delete</button>
-          ${l.customer_id && l.customer_charge != null
-            ? `<button class="clickable-link" style="font-size:0.8rem;" data-create-invoice="${l.id}">+ Create Invoice</button>`
-            : ''}
-        </div>
-      </div>`).join('');
+        </td>
+        <td>${l.carrier_rate != null ? money(l.carrier_rate) : '—'}</td>
+        <td>${l.customer_charge != null ? money(l.customer_charge) : '—'}</td>
+        <td style="font-weight:bold;color:var(--success);" class="admin-only-col">${grossProfit(l)}</td>
+        <td class="actions-cell">
+          <div class="btn-row">
+            <button class="btn-primary btn-sm" data-edit-load="${l.id}">Edit</button>
+            <button class="btn-primary btn-sm" data-open-doc="rc" data-load-id="${l.id}">RC</button>
+            <button class="btn-primary btn-sm" data-open-doc="pod" data-load-id="${l.id}">POD</button>
+            <button class="btn-danger btn-sm" data-delete-load="${l.id}" data-load-label="load ${esc(l.load_number)}">Delete</button>
+            ${l.customer_id && l.customer_charge != null
+              ? `<button class="clickable-link admin-only-col" style="font-size:0.75rem;" data-create-invoice="${l.id}">+ Invoice</button>`
+              : ''}
+          </div>
+        </td>
+      </tr>`).join('');
+    applyRoleVisibility();
   }
 
   return { refresh, render };
