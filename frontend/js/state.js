@@ -25,7 +25,12 @@ const State = {
   async refreshCarriers() { this.carriers = (await Api.Carriers.list()).carriers; },
   async refreshConsignees() { this.consignees = (await Api.Consignees.list()).consignees; },
   async refreshLoads(query = '') { this.loads = (await Api.Loads.list(query)).loads; },
-  async refreshInvoices(query = '') { this.invoices = (await Api.Invoices.list(query)).invoices; },
+  async refreshInvoices(query = '') {
+    // Invoices are Administrator-only — don't even ask if this user can't see them,
+    // rather than firing a request we know will be refused and showing a scary error.
+    if (this.currentUser?.role !== 'Administrator') { this.invoices = []; return; }
+    this.invoices = (await Api.Invoices.list(query)).invoices;
+  },
   async refreshUsersIfAdmin() {
     if (this.currentUser?.role === 'Administrator') this.users = (await Api.Users.list()).users;
   },
