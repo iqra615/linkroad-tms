@@ -1,5 +1,5 @@
-// Point this at your running backend. Defaults to the local dev server
-// started by `npm start` inside backend/ (see backend/.env.example for PORT).
+// Points at the live Render backend by default. If you ever run the backend
+// locally for development instead, change this to http://localhost:4000/api.
 window.APP_CONFIG = {
-  API_BASE_URL: 'http://localhost:4000/api'
+  API_BASE_URL: 'https://linkroad-tms-backend-qzae.onrender.com/api'
 };
