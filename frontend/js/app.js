@@ -39,7 +39,7 @@ const App = (() => {
       else if (activeTab === 'carriers') RenderCarriers.render();
       else if (activeTab === 'invoices') RenderInvoices.render();
       else if (activeTab === 'reports') await RenderReports.render();
-      else if (activeTab === 'users-tab') RenderUsers.render();
+      else if (activeTab === 'users-tab') await RenderUsers.refresh();
     } catch (err) {
       toast(describeApiError(err), 'error');
     }

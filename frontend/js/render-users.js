@@ -1,15 +1,13 @@
 const RenderUsers = (() => {
-  let users = [];
-
   async function refresh() {
     if (State.currentUser?.role !== 'Administrator') return;
-    users = (await Api.Users.list()).users;
-    State.users = users;
+    await State.refreshUsersIfAdmin();
     render();
   }
 
   function render() {
     const tbody = document.getElementById('users-table');
+    const users = State.users;
     if (!users.length) {
       tbody.innerHTML = emptyRow(4, 'No users yet.');
       return;
@@ -26,7 +24,7 @@ const RenderUsers = (() => {
       </tr>`).join('');
   }
 
-  function getById(id) { return users.find((u) => u.id === id); }
+  function getById(id) { return State.users.find((u) => u.id === id); }
 
   return { refresh, render, getById };
 })();
