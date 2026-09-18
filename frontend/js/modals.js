@@ -34,6 +34,7 @@ const Modals = (() => {
         <div><strong>Delivery Date:</strong> ${dateOrDash(l.delivery_date)}</div>
         <div><strong>Empty Return:</strong> ${dateOrDash(l.empty_return_date)}</div>
         <div><strong>ETA / LFD:</strong> ${dateOrDash(l.eta_date)} / ${dateOrDash(l.lfd_date)}</div>
+        <div><strong>Estimated Miles:</strong> ${l.estimated_miles != null ? `${l.estimated_miles} mi` : '—'}</div>
         <div><strong>Carrier:</strong> ${esc(l.carrier_name) || '—'}</div>
         <div><strong>Carrier Rate:</strong> ${l.carrier_rate != null ? money(l.carrier_rate) : '—'}</div>
         <div><strong>Customer Charge:</strong> ${l.customer_charge != null ? money(l.customer_charge) : '—'}</div>

@@ -86,6 +86,7 @@ const Documents = (() => {
           <div style="${S.box}"><div style="${S.label}">Container #</div>${esc(l.container_number) || '—'}</div>
           <div style="${S.box}"><div style="${S.label}">BOL #</div>${esc(l.bol_number) || '—'}</div>
           <div style="${S.box}"><div style="${S.label}">Weight / Type</div>${esc(l.weight) || '—'} ${esc(l.container_type) || ''}</div>
+          ${l.estimated_miles != null ? `<div style="${S.box}"><div style="${S.label}">Estimated Miles</div>${esc(l.estimated_miles)} mi</div>` : ''}
         </div>
         <div style="${S.box};display:flex;justify-content:space-between;align-items:center;">
           <div style="font-weight:700;">Total Carrier Rate</div>

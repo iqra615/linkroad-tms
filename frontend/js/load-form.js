@@ -52,6 +52,13 @@ const LoadForm = (() => {
       ${field(id('etaDate'), 'Estimated Time of Arrival (ETA)', `<input type="date" id="${id('etaDate')}" value="${esc((l.eta_date || '').slice(0, 10))}">`)}
 
       ${field(id('lfdDate'), 'Last Free Date (LFD)', `<input type="date" id="${id('lfdDate')}" value="${esc((l.lfd_date || '').slice(0, 10))}">`)}
+      ${field(id('estimatedMiles'), 'Estimated Miles', `
+        <div style="display:flex;gap:6px;">
+          <input type="number" step="0.1" min="0" id="${id('estimatedMiles')}" placeholder="e.g. 245.5" value="${l.estimated_miles ?? ''}" style="flex:1;">
+          ${l.id ? `<button type="button" class="btn-primary btn-sm" style="white-space:nowrap;" onclick="LoadForm.calculateMiles(this,'${idPrefix}','${l.id}')">Calculate</button>` : ''}
+        </div>
+        ${l.id ? '' : '<div class="text-muted" style="font-size:0.75rem;margin-top:4px;">Save the load first, then reopen it to auto-calculate miles from the pickup/delivery addresses — or just type the mileage in.</div>'}
+      `)}
       ${field(id('carrierRate'), 'Carrier Rate ($)', `<input type="number" step="0.01" min="0" id="${id('carrierRate')}" placeholder="0.00" value="${l.carrier_rate ?? ''}" oninput="LoadForm.calcProfit('${idPrefix}')">`)}
       ${field(id('customerCharge'), 'Customer Charges ($)', `<input type="number" step="0.01" min="0" id="${id('customerCharge')}" placeholder="0.00" value="${l.customer_charge ?? ''}" oninput="LoadForm.calcProfit('${idPrefix}')">`)}
 
@@ -87,6 +94,24 @@ const LoadForm = (() => {
     document.getElementById(`${idPrefix}_grossProfit`).value = '$' + (cc - cr).toFixed(2);
   }
 
+  async function calculateMiles(btn, idPrefix, loadId) {
+    const input = document.getElementById(`${idPrefix}_estimatedMiles`);
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = '…';
+    try {
+      const { estimated_miles } = await Api.Loads.calculateMiles(loadId);
+      input.value = estimated_miles;
+      await App.refreshLoadsDependentViews();
+      toast(`Estimated ${estimated_miles} miles.`, 'success');
+    } catch (err) {
+      toast(describeApiError(err), 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerText = originalText;
+    }
+  }
+
   function toggleCompletedDate(idPrefix) {
     const status = document.getElementById(`${idPrefix}_status`).value;
     const dateInput = document.getElementById(`${idPrefix}_completedDate`);
@@ -117,6 +142,7 @@ const LoadForm = (() => {
       lfd_date: val(id('lfdDate')) || null,
       carrier_rate: val(id('carrierRate')) || '',
       customer_charge: val(id('customerCharge')) || '',
+      estimated_miles: val(id('estimatedMiles')) || '',
       status: val(id('status')),
       completed_date: val(id('completedDate')) || null,
       weight: val(id('weight')),
@@ -132,5 +158,5 @@ const LoadForm = (() => {
     };
   }
 
-  return { renderFields, collectValues, calcProfit, toggleCompletedDate, LOAD_TYPES, CONTAINER_TYPES, STATUSES };
+  return { renderFields, collectValues, calcProfit, calculateMiles, toggleCompletedDate, LOAD_TYPES, CONTAINER_TYPES, STATUSES };
 })();

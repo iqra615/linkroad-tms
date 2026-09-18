@@ -1,4 +1,7 @@
 const RenderLoads = (() => {
+  const PAGE_SIZE = 25;
+  let currentPage = 1;
+
   async function refresh() {
     const search = document.getElementById('loadSearch').value.trim();
     const status = document.getElementById('loadStatusFilter').value;
@@ -8,6 +11,16 @@ const RenderLoads = (() => {
     if (status) params.set('status', status);
     if (entityId) params.set('entity_id', entityId);
     await State.refreshLoads(params.toString() ? `?${params}` : '');
+    currentPage = 1; // a new search/filter always starts back at page 1
+    render();
+  }
+
+  function resetPage() {
+    currentPage = 1;
+  }
+
+  function goToPage(page) {
+    currentPage = page;
     render();
   }
 
@@ -49,6 +62,22 @@ const RenderLoads = (() => {
     return `${eta} / ${lfd}`;
   }
 
+  function renderPagination(totalItems, totalPages) {
+    const bar = document.getElementById('loadsPagination');
+    if (!bar) return;
+    if (totalItems === 0 || totalPages <= 1) {
+      bar.innerHTML = '';
+      return;
+    }
+    const start = (currentPage - 1) * PAGE_SIZE + 1;
+    const end = Math.min(currentPage * PAGE_SIZE, totalItems);
+    bar.innerHTML = `
+      <button class="btn-primary btn-sm" ${currentPage <= 1 ? 'disabled' : ''} onclick="RenderLoads.goToPage(${currentPage - 1})">← Previous</button>
+      <span class="text-muted" style="font-size:0.85rem;">Showing ${start}–${end} of ${totalItems} · Page ${currentPage} of ${totalPages}</span>
+      <button class="btn-primary btn-sm" ${currentPage >= totalPages ? 'disabled' : ''} onclick="RenderLoads.goToPage(${currentPage + 1})">Next →</button>
+    `;
+  }
+
   function render() {
     populateEntityFilter();
     populateStatusFilter();
@@ -57,10 +86,16 @@ const RenderLoads = (() => {
 
     if (!loads.length) {
       tbody.innerHTML = emptyRow(18, 'No loads match your filters.');
+      renderPagination(0, 0);
       return;
     }
 
-    tbody.innerHTML = loads.map((l) => `
+    const totalPages = Math.max(1, Math.ceil(loads.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages; // e.g. a load got deleted off the last page
+    if (currentPage < 1) currentPage = 1;
+    const pageLoads = loads.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    tbody.innerHTML = pageLoads.map((l) => `
       <tr class="${statusRowClass(l.status)}">
         <td><button class="clickable-link" data-view-load="${l.id}">${esc(l.load_number)}</button></td>
         <td>${entityBadge(l.entity_code)}</td>
@@ -96,7 +131,8 @@ const RenderLoads = (() => {
         </td>
       </tr>`).join('');
     applyRoleVisibility();
+    renderPagination(loads.length, totalPages);
   }
 
-  return { refresh, render };
+  return { refresh, render, resetPage, goToPage };
 })();

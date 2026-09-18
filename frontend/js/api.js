@@ -117,7 +117,8 @@ const Api = (() => {
       create: (data) => request('/loads', { method: 'POST', body: data }),
       update: (id, data) => request(`/loads/${id}`, { method: 'PUT', body: data }),
       remove: (id) => request(`/loads/${id}`, { method: 'DELETE' }),
-      setCarrierPayment: (id, status) => request(`/loads/${id}/carrier-payment`, { method: 'PATCH', body: { status } })
+      setCarrierPayment: (id, status) => request(`/loads/${id}/carrier-payment`, { method: 'PATCH', body: { status } }),
+      calculateMiles: (id) => request(`/loads/${id}/calculate-miles`, { method: 'POST' })
     },
 
     Invoices: {

@@ -160,9 +160,9 @@ const App = (() => {
 
     document.getElementById('loadSearch').addEventListener('input', debounce(() => RenderLoads.refresh(), 300));
     document.getElementById('loadStatusFilter').addEventListener('change', () => RenderLoads.refresh());
-    document.getElementById('loadFilterMine').addEventListener('change', () => RenderLoads.render());
-    document.getElementById('loadFilterAll').addEventListener('change', () => RenderLoads.render());
-    document.getElementById('loadFilterHideCompleted').addEventListener('change', () => RenderLoads.render());
+    document.getElementById('loadFilterMine').addEventListener('change', () => { RenderLoads.resetPage(); RenderLoads.render(); });
+    document.getElementById('loadFilterAll').addEventListener('change', () => { RenderLoads.resetPage(); RenderLoads.render(); });
+    document.getElementById('loadFilterHideCompleted').addEventListener('change', () => { RenderLoads.resetPage(); RenderLoads.render(); });
     document.getElementById('loadEntityFilter').addEventListener('change', () => RenderLoads.refresh());
 
     document.getElementById('entityModalCloseBtn').addEventListener('click', Modals.close);
